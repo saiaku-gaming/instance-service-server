@@ -19,13 +19,11 @@ public interface CharacterRepository extends JpaRepository<Character, Integer> {
 
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO selected_character (person_id, character_name) "
-    		+ " VALUES (:person_id, :character_name)"
+    @Query(value = "INSERT INTO selected_character (owner, character_name) "
+    		+ " VALUES (:owner, :character_name)"
     		+ "ON CONFLICT DO UPDATE SET character_name = :character_name", nativeQuery = true)
-	public void setSelectedCharacter(@Param("person_id") String owner, @Param("character_name")  String characterName);
+	public void setSelectedCharacter(@Param("owner") String owner, @Param("character_name")  String characterName);
     
-    @Transactional
-    @Modifying
-    @Query(value = "SELECT c.* from character c join selected_character sc USING (person_id, character_name) where sc.person_id = :person_id", nativeQuery = true)
-	public Optional<Character> getSelectedCharacter(@Param("person_id") String owner);
+    @Query(value = "SELECT c.* from character c join selected_character sc USING (owner, character_name) where sc.owner = :owner", nativeQuery = true)
+	public Optional<Character> getSelectedCharacter(@Param("owner") String owner);
 }

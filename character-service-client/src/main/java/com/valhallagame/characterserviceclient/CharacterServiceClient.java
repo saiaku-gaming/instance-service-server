@@ -1,17 +1,23 @@
 package com.valhallagame.characterserviceclient;
 
-import java.util.Optional;
+import java.io.IOException;
 
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
-import com.valhallagame.characterserviceclient.model.Character;
-import com.valhallagame.characterserviceclient.model.CharacterNameParameter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.valhallagame.characterserviceclient.message.CharacterAndOwnerParameter;
+import com.valhallagame.characterserviceclient.message.CharacterNameParameter;
+import com.valhallagame.characterserviceclient.message.CharacterParameter;
+import com.valhallagame.characterserviceclient.message.UsernameParameter;
+import com.valhallagame.common.DefaultServicePortMappings;
+import com.valhallagame.common.RestCaller;
+import com.valhallagame.common.RestResponse;
 
 public class CharacterServiceClient {
+	
+	private static RestCaller restCaller = new RestCaller();
+	
 	private static CharacterServiceClient characterServiceClient;
 
-	private String characterServiceServerUrl = "http://localhost:1236";
+	private String characterServiceServerUrl = "http://localhost:" + DefaultServicePortMappings.CHARACTER_SERVICE_PORT;
 
 	private CharacterServiceClient() {
 	}
@@ -25,18 +31,41 @@ public class CharacterServiceClient {
 		if (characterServiceClient == null) {
 			characterServiceClient = new CharacterServiceClient();
 		}
-
 		return characterServiceClient;
 	}
 
-	public Optional<Character> getCharacter(String characterName) {
-		RestTemplate restTemplate = new RestTemplate();
-		try {
-			return Optional.ofNullable(restTemplate.postForObject(characterServiceServerUrl + "/v1/character/get-character",
-					new CharacterNameParameter(characterName), Character.class));
-		} catch (RestClientException e) {
-			e.printStackTrace();
-			return Optional.empty();
-		}
+	
+	public RestResponse<Character> getCharacter(String username, String characterName) throws IOException {
+		CharacterAndOwnerParameter characterAndOwner =  new CharacterAndOwnerParameter(characterName, username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/get", characterAndOwner, Character.class);
+	}
+
+	public RestResponse<JsonNode> getAll(String username) throws IOException {
+		UsernameParameter usernameParam = new UsernameParameter(username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/get-all", usernameParam, JsonNode.class);
+	}
+
+	public RestResponse<String> save(CharacterParameter character) throws IOException {
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/save", character, String.class);
+	}
+
+	public RestResponse<String> delete(String username, String characterName) throws IOException {
+		CharacterAndOwnerParameter characterAndOwner =  new CharacterAndOwnerParameter(characterName, username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/delete", characterAndOwner, String.class);
+	}
+
+	public RestResponse<String> characterAvailable(String characterName) throws IOException {
+		CharacterNameParameter cnp = new CharacterNameParameter(characterName);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/character-available", cnp, String.class);
+	}
+
+	public RestResponse<String> selectCharacter(String username, String characterName) throws IOException {
+		CharacterAndOwnerParameter characterAndOwner =  new CharacterAndOwnerParameter(characterName, username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/select-character", characterAndOwner, String.class);
+	}
+
+	public RestResponse<Character> getSelectedCharacter(String username) throws IOException {
+		UsernameParameter usernameParam = new UsernameParameter(username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/get-selected-character", usernameParam, Character.class);
 	}
 }

@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.valhallagame.characterserviceserver.message.CharacterAndOwnerParameter;
-import com.valhallagame.characterserviceserver.message.CharacterNameParameter;
-import com.valhallagame.characterserviceserver.message.CharacterParameter;
-import com.valhallagame.characterserviceserver.message.UsernameParameter;
+import com.valhallagame.characterserviceclient.message.CharacterAndOwnerParameter;
+import com.valhallagame.characterserviceclient.message.CharacterNameParameter;
+import com.valhallagame.characterserviceclient.message.CharacterParameter;
+import com.valhallagame.characterserviceclient.message.UsernameParameter;
 import com.valhallagame.characterserviceserver.model.Character;
 import com.valhallagame.characterserviceserver.service.CharacterService;
 import com.valhallagame.common.JS;
@@ -41,7 +41,7 @@ public class CharacterController {
 		return JS.message(HttpStatus.OK, optcharacter.get());
 	}
 
-	@RequestMapping(path = "/get-all", method = RequestMethod.GET)
+	@RequestMapping(path = "/get-all", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<?> getAll(@RequestBody UsernameParameter username) {
 		return JS.message(HttpStatus.OK, characterService.getCharacters(username.getUsername()));
@@ -51,7 +51,7 @@ public class CharacterController {
 	@ResponseBody
 	public ResponseEntity<?> save(@RequestBody CharacterParameter characterData) {
 
-		String charName = characterData.getCharacterName();
+		String charName = characterData.getCharacterName().toLowerCase();
 		if (charName.contains("Debug Nisse")) {
 			return JS.message(HttpStatus.BAD_REQUEST, "Debug Nisse is not allowed to save stuff");
 		}
@@ -60,15 +60,15 @@ public class CharacterController {
 		if (!localOpt.isPresent()) {
 			Character c = new Character();
 			c.setOwner(characterData.getOwner());
-			c.setDisplayCharacterName(characterData.getDisplayCharacterName());
-			c.setCharacterName(characterData.getCharacterName());
+			c.setDisplayCharacterName(characterData.getCharacterName());
+			c.setCharacterName(characterData.getCharacterName().toLowerCase());
 			characterService.saveCharacter(c);
 		} else {
 			Character local = localOpt.get();
 			if (local.getOwner().equals(characterData.getOwner())) {
-				local.setDisplayCharacterName(characterData.getDisplayCharacterName());
+				local.setDisplayCharacterName(characterData.getCharacterName());
 				characterService.saveCharacter(local);
-				characterService.setSelectedCharacter(characterData.getOwner(), characterData.getCharacterName());
+				characterService.setSelectedCharacter(characterData.getOwner(), characterData.getCharacterName().toLowerCase());
 			} else {
 				return JS.message(HttpStatus.CONFLICT, "You do not own that character.");
 			}

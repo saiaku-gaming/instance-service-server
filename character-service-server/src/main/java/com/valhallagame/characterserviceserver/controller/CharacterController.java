@@ -50,7 +50,7 @@ public class CharacterController {
 	@ResponseBody
 	public ResponseEntity<?> save(@RequestBody Character characterData) {
 
-		String charName = characterData.getCharacterName().toLowerCase();
+		String charName = characterData.getCharacterName();
 		Optional<Character> localOpt = characterService.getCharacter(charName);
 		if (!localOpt.isPresent()) {
 			Character c = new Character();

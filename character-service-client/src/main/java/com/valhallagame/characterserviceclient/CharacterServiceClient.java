@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.valhallagame.characterserviceclient.message.CharacterAndOwnerParameter;
 import com.valhallagame.characterserviceclient.message.CharacterNameParameter;
-import com.valhallagame.characterserviceclient.message.CharacterParameter;
+import com.valhallagame.characterserviceclient.message.Character;
 import com.valhallagame.characterserviceclient.message.UsernameParameter;
 import com.valhallagame.common.DefaultServicePortMappings;
 import com.valhallagame.common.RestCaller;
@@ -45,8 +45,9 @@ public class CharacterServiceClient {
 		return restCaller.postCall(characterServiceServerUrl + "/v1/character/get-all", usernameParam, JsonNode.class);
 	}
 
-	public RestResponse<String> save(CharacterParameter character) throws IOException {
-		return restCaller.postCall(characterServiceServerUrl + "/v1/character/save", character, String.class);
+	public RestResponse<String> create(String username, String characterName) throws IOException {
+		CharacterAndOwnerParameter characterAndOwner =  new CharacterAndOwnerParameter(characterName, username);
+		return restCaller.postCall(characterServiceServerUrl + "/v1/character/create", characterAndOwner, String.class);
 	}
 
 	public RestResponse<String> delete(String username, String characterName) throws IOException {

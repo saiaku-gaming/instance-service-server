@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CharacterParameter {
+public class Character {
 	private String owner;
 	
 	//Case sensative as it overrides DisplayUsername

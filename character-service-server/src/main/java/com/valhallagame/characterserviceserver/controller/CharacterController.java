@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.valhallagame.characterserviceclient.message.CharacterAndOwnerParameter;
 import com.valhallagame.characterserviceclient.message.CharacterNameParameter;
-import com.valhallagame.characterserviceclient.message.CharacterParameter;
 import com.valhallagame.characterserviceclient.message.UsernameParameter;
 import com.valhallagame.characterserviceserver.model.Character;
 import com.valhallagame.characterserviceserver.service.CharacterService;
@@ -47,31 +46,23 @@ public class CharacterController {
 		return JS.message(HttpStatus.OK, characterService.getCharacters(username.getUsername()));
 	}
 
-	@RequestMapping(path = "/save", method = RequestMethod.POST)
+	@RequestMapping(path = "/create", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> save(@RequestBody CharacterParameter characterData) {
+	public ResponseEntity<?> save(@RequestBody Character characterData) {
 
 		String charName = characterData.getCharacterName().toLowerCase();
-		if (charName.contains("Debug Nisse")) {
-			return JS.message(HttpStatus.BAD_REQUEST, "Debug Nisse is not allowed to save stuff");
-		}
-
 		Optional<Character> localOpt = characterService.getCharacter(charName);
 		if (!localOpt.isPresent()) {
 			Character c = new Character();
 			c.setOwner(characterData.getOwner());
 			c.setDisplayCharacterName(characterData.getCharacterName());
 			c.setCharacterName(characterData.getCharacterName().toLowerCase());
+			c.setChestItem("LeatherArmor");
+			c.setMainhandArmament("Sword");
+			c.setOffHandArmament("MediumShield");
 			characterService.saveCharacter(c);
 		} else {
-			Character local = localOpt.get();
-			if (local.getOwner().equals(characterData.getOwner())) {
-				local.setDisplayCharacterName(characterData.getCharacterName());
-				characterService.saveCharacter(local);
-				characterService.setSelectedCharacter(characterData.getOwner(), characterData.getCharacterName().toLowerCase());
-			} else {
-				return JS.message(HttpStatus.CONFLICT, "You do not own that character.");
-			}
+			return JS.message(HttpStatus.CONFLICT, "Character already exists.");
 		}
 		return JS.message(HttpStatus.OK, "OK");
 	}
@@ -119,7 +110,8 @@ public class CharacterController {
 	public ResponseEntity<?> selectCharacter(@RequestBody CharacterAndOwnerParameter characterAndOwner) {
 		Optional<Character> localOpt = characterService.getCharacter(characterAndOwner.getCharacterName());
 		if (!localOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Character with name " + characterAndOwner.getCharacterName() + " was not found.");
+			return JS.message(HttpStatus.NOT_FOUND,
+					"Character with name " + characterAndOwner.getCharacterName() + " was not found.");
 		} else {
 			if (!localOpt.get().getOwner().equals(characterAndOwner.getOwner())) {
 				return JS.message(HttpStatus.FORBIDDEN, "You don't own that character.");

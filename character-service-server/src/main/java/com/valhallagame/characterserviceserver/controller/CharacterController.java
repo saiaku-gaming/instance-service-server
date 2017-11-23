@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.valhallagame.characterserviceclient.message.CharacterAndOwnerParameter;
-import com.valhallagame.characterserviceclient.message.CharacterNameParameter;
-import com.valhallagame.characterserviceclient.message.UsernameParameter;
+import com.valhallagame.characterserviceserver.message.CharacterAndOwnerParameter;
+import com.valhallagame.characterserviceserver.message.CharacterNameParameter;
+import com.valhallagame.characterserviceserver.message.UsernameParameter;
 import com.valhallagame.characterserviceserver.model.Character;
 import com.valhallagame.characterserviceserver.service.CharacterService;
 import com.valhallagame.common.JS;

@@ -21,7 +21,7 @@ public interface CharacterRepository extends JpaRepository<Character, Integer> {
     @Modifying
     @Query(value = "INSERT INTO selected_character (owner, character_name) "
     		+ " VALUES (:owner, :character_name)"
-    		+ "ON CONFLICT DO UPDATE SET character_name = :character_name", nativeQuery = true)
+    		+ "ON CONFLICT (owner) DO UPDATE SET character_name = :character_name", nativeQuery = true)
 	public void setSelectedCharacter(@Param("owner") String owner, @Param("character_name")  String characterName);
     
     @Query(value = "SELECT c.* from character c join selected_character sc USING (owner, character_name) where sc.owner = :owner", nativeQuery = true)

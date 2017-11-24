@@ -2,6 +2,7 @@ package com.valhallagame.characterserviceserver.controller;
 
 import java.util.Optional;
 
+import org.assertj.core.internal.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -97,6 +98,9 @@ public class CharacterController {
 	@RequestMapping(path = "/character-available", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<?> characterAvailable(@RequestBody CharacterNameParameter input) {
+		if(input.getCharacterName() == null || input.getCharacterName().isEmpty()){
+			return JS.message(HttpStatus.BAD_REQUEST, "Missing characterName field");
+		}
 		Optional<Character> localOpt = characterService.getCharacter(input.getCharacterName());
 		if (localOpt.isPresent()) {
 			return JS.message(HttpStatus.CONFLICT, "Character not available");

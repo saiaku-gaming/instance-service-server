@@ -1,4 +1,4 @@
-package com.valhallagame.characterserviceserver.message;
+package com.valhallagame.instanceserviceserver.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

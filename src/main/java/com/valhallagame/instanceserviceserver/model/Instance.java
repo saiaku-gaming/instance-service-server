@@ -1,4 +1,4 @@
-package com.valhallagame.characterserviceserver.model;
+package com.valhallagame.instanceserviceserver.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,18 +11,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = "character")
-public class Character {
+@Table(name = "instance")
+public class Instance {
 
     @Id
-    @Column(unique = true, name = "character_name")
-    private String characterName;
+    @Column(unique = true, name = "instance_name")
+    private String instanceName;
 
     @Column()
     private String owner;
     
-    @Column(unique = true, name = "display_character_name")
-    private String displayCharacterName;
+    @Column(unique = true, name = "display_instance_name")
+    private String displayInstanceName;
 
     @Column(name = "chest_item")
     private String chestItem;

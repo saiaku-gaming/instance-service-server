@@ -2,7 +2,10 @@ package com.valhallagame.instanceserviceserver.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 import lombok.Data;
@@ -14,23 +17,27 @@ import lombok.NoArgsConstructor;
 @Table(name = "instance")
 public class Instance {
 
-    @Id
-    @Column(unique = true, name = "instance_name")
-    private String instanceName;
+	@Id
+	@SequenceGenerator(name = "instance_instance_id_seq", sequenceName = "instance_instance_id_seq", allocationSize = 1)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "instance_instance_id_seq")
+	@Column(name = "instance_id", updatable = false)
+	private Integer id;
 
-    @Column()
-    private String owner;
-    
-    @Column(unique = true, name = "display_instance_name")
-    private String displayInstanceName;
+    @Column(name = "version")
+    private String version;
 
-    @Column(name = "chest_item")
-    private String chestItem;
-    
-    @Column(name = "mainhand_armament")
-    private String mainhandArmament;
-    
-    @Column(name = "off_hand_armament")
-    private String offHandArmament;
-    
+    @Column(name = "level")
+    private String level;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "port")
+    private int port;
+
+    @Column(name = "player_count")
+    private int playerCount;
+
+    @Column(name = "state")
+    private String state;
 }

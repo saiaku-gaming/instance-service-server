@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.valhallagame.instanceserviceserver.message.InstanceAndOwnerParameter;
-import com.valhallagame.instanceserviceserver.message.InstanceNameParameter;
-import com.valhallagame.instanceserviceserver.message.UsernameParameter;
-import com.valhallagame.instanceserviceserver.model.Instance;
-import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.common.JS;
+import com.valhallagame.common.RestResponse;
+import com.valhallagame.instanceserviceserver.message.UsernameAndVersionParameter;
+import com.valhallagame.instanceserviceserver.model.Instance;
+import com.valhallagame.instanceserviceserver.model.InstanceState;
+import com.valhallagame.instanceserviceserver.service.InstanceService;
+import com.valhallagame.partyserviceclient.PartyServiceClient;
+import com.valhallagame.partyserviceclient.model.Party;
 
 @Controller
 @RequestMapping(path = "/v1/instance")
@@ -25,111 +27,49 @@ public class InstanceController {
 	@Autowired
 	private InstanceService instanceService;
 
-	@RequestMapping(path = "/get", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> getInstance(@RequestBody InstanceAndOwnerParameter instanceAndOwner) {
-		Optional<Instance> optinstance = instanceService.getInstance(instanceAndOwner.getInstanceName());
-		if (!optinstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance with that instance name was found!");
-		}
-
-		Instance instance = optinstance.get();
-		if (!instance.getOwner().equals(instanceAndOwner.getOwner())) {
-			return JS.message(HttpStatus.NOT_FOUND, "Wrong owner!");
-		}
-		return JS.message(HttpStatus.OK, optinstance.get());
-	}
-
-	@RequestMapping(path = "/get-all", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> getAll(@RequestBody UsernameParameter username) {
-		return JS.message(HttpStatus.OK, instanceService.getInstances(username.getUsername()));
-	}
-
-	@RequestMapping(path = "/create", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> save(@RequestBody Instance instanceData) {
-
-		String charName = instanceData.getInstanceName();
-		Optional<Instance> localOpt = instanceService.getInstance(charName);
-		if (!localOpt.isPresent()) {
-			Instance c = new Instance();
-			c.setOwner(instanceData.getOwner());
-			c.setDisplayInstanceName(instanceData.getInstanceName());
-			c.setInstanceName(instanceData.getInstanceName().toLowerCase());
-			c.setChestItem("LeatherArmor");
-			c.setMainhandArmament("Sword");
-			c.setOffHandArmament("MediumShield");
-			instanceService.saveInstance(c);
-		} else {
-			return JS.message(HttpStatus.CONFLICT, "Instance already exists.");
-		}
-		return JS.message(HttpStatus.OK, "OK");
-	}
-
-	@RequestMapping(path = "/delete", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> delete(@RequestBody InstanceAndOwnerParameter instanceAndOwner) {
-		String owner = instanceAndOwner.getOwner();
-		Optional<Instance> localOpt = instanceService.getInstance(instanceAndOwner.getInstanceName());
-		if (!localOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Not found");
-		}
-
-		Instance local = localOpt.get();
-
-		if (owner.equals(local.getOwner())) {
-			// Randomly(ish) select a new instance as default instance if the
-			// person has one.
-			Optional<Instance> selectedInstanceOpt = instanceService.getSelectedInstance(owner);
-			if (selectedInstanceOpt.isPresent() && selectedInstanceOpt.get().equals(local)) {
-				instanceService.getInstances(owner).stream().filter(x -> !x.equals(local)).findAny().ifPresent(ch -> {
-					instanceService.setSelectedInstance(owner, ch.getInstanceName());
-				});
-			}
-			instanceService.deleteInstance(local);
-			return JS.message(HttpStatus.OK, "Deleted instance");
-		} else {
-			return JS.message(HttpStatus.FORBIDDEN, "No access");
-		}
-	}
-
-	@RequestMapping(path = "/instance-available", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> instanceAvailable(@RequestBody InstanceNameParameter input) {
-		if(input.getInstanceName() == null || input.getInstanceName().isEmpty()){
-			return JS.message(HttpStatus.BAD_REQUEST, "Missing instanceName field");
-		}
-		Optional<Instance> localOpt = instanceService.getInstance(input.getInstanceName());
-		if (localOpt.isPresent()) {
-			return JS.message(HttpStatus.CONFLICT, "Instance not available");
-		} else {
-			return JS.message(HttpStatus.OK, "Instance available");
-		}
-	}
-
-	@RequestMapping(path = "/select-instance", method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<?> selectInstance(@RequestBody InstanceAndOwnerParameter instanceAndOwner) {
-		Optional<Instance> localOpt = instanceService.getInstance(instanceAndOwner.getInstanceName());
-		if (!localOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND,
-					"Instance with name " + instanceAndOwner.getInstanceName() + " was not found.");
-		} else {
-			if (!localOpt.get().getOwner().equals(instanceAndOwner.getOwner())) {
-				return JS.message(HttpStatus.FORBIDDEN, "You don't own that instance.");
-			}
-			instanceService.setSelectedInstance(instanceAndOwner.getOwner(), instanceAndOwner.getInstanceName());
-			return JS.message(HttpStatus.OK, "Instance selected");
-		}
-	}
-
 	@RequestMapping(path = "/get-selected-instance", method = RequestMethod.GET)
 	@ResponseBody
-	public ResponseEntity<?> getSelectedInstance(@RequestBody UsernameParameter username) {
-		Optional<Instance> selectedInstance = instanceService.getSelectedInstance(username.getUsername());
-		if (selectedInstance.isPresent()) {
-			return JS.message(HttpStatus.OK, selectedInstance);
+	public ResponseEntity<?> getSelectedInstance(@RequestBody UsernameAndVersionParameter usernameAndVersion) {
+
+		String username = usernameAndVersion.getUsername();
+		String version = usernameAndVersion.getVersion();
+
+		Optional<Instance> selectedInstance = instanceService.getSelectedInstance(username);
+
+		if (usernameAndVersion.getVersion() == null || usernameAndVersion.getVersion().isEmpty()) {
+			return JS.message(HttpStatus.BAD_REQUEST, "Missing game version");
+		}
+
+		PartyServiceClient partyServiceClient = PartyServiceClient.get();
+
+		RestResponse<Party> partyResp = partyServiceClient.getParty(username);
+		if (partyResp.isOk()) {
+			Party party = partyResp.getResponse().get();
+
+			Optional<Instance> insOpt = instanceService.getInstanceByPerson(party.getLeader());
+			if (insOpt.isPresent()) {
+				Instance ins = insOpt.get();
+				if (ins.getState().equals(InstanceState.READY.name()) && ins.getVersion().equals(version)) {
+					return JS.message(HttpStatus.OK, ins);
+				}
+			}
+		}
+
+		// If user is not in a party but was playing an instance that has yet
+		// not died.
+		Optional<Instance> insOpt = instanceService.getInstanceByPerson(username);
+		if (insOpt.isPresent()) {
+			Instance hub = insOpt.get();
+			if (hub.getState().equals(InstanceState.READY.name()) && hub.getVersion().equals(version)) {
+				return JS.message(HttpStatus.OK, insOpt.get());
+			}
+		}
+
+		// Find the hub with the lowest numbers of players on it.
+		Optional<Instance> hubOpt = instanceService.getHubWithLeastAmountOfPlayers(version);
+
+		if (hubOpt.isPresent()) {
+			return JS.message(HttpStatus.OK, hubOpt.get());
 		} else {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance selected");
 		}

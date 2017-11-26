@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsernameParameter {
+public class UsernameAndVersionParameter {
 	private String username;
+	private String version;
 }

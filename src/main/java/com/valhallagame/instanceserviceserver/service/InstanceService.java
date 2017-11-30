@@ -21,15 +21,23 @@ public class InstanceService {
 		instanceRepository.delete(local);
 	}
 
-	public Optional<Instance> getInstanceByLeader(String leader) {
-		return Optional.empty();
-	}
-
-	public Optional<Instance> getInstanceByPerson(String leader) {
-		return null;
+	public Optional<Instance> getInstance(String member) {
+		return instanceRepository.getInstance(member);
 	}
 
 	public Optional<Instance> getHubWithLeastAmountOfPlayers(String version) {
+		return null;
+	}
+
+	public void removeInstanceFromPerson(String username) {
+	}
+
+	public void setInstance(String username) {
+	
+	}
+
+	public Optional<Instance> getInstanceByPerson(String leader) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 }

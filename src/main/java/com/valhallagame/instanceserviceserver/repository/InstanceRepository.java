@@ -26,4 +26,6 @@ public interface InstanceRepository extends JpaRepository<Instance, Integer> {
     
     @Query(value = "SELECT c.* from instance c join selected_instance sc USING (owner, instance_name) where sc.owner = :owner", nativeQuery = true)
 	public Optional<Instance> getSelectedInstance(@Param("owner") String owner);
+
+	public Optional<Instance> getInstance(String member);
 }

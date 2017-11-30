@@ -1,5 +1,6 @@
 package com.valhallagame.instanceserviceserver.controller;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,17 +30,19 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-selected-instance", method = RequestMethod.GET)
 	@ResponseBody
-	public ResponseEntity<?> getSelectedInstance(@RequestBody UsernameAndVersionParameter usernameAndVersion) {
+	public ResponseEntity<?> getSelectedInstance(@RequestBody UsernameAndVersionParameter usernameAndVersion) throws IOException {
 
 		String username = usernameAndVersion.getUsername();
 		String version = usernameAndVersion.getVersion();
 
-		Optional<Instance> selectedInstance = instanceService.getSelectedInstance(username);
-
 		if (usernameAndVersion.getVersion() == null || usernameAndVersion.getVersion().isEmpty()) {
 			return JS.message(HttpStatus.BAD_REQUEST, "Missing game version");
 		}
-
+		
+		if (username == null || username.isEmpty()) {
+			return JS.message(HttpStatus.BAD_REQUEST, "Missing username");
+		}
+		
 		PartyServiceClient partyServiceClient = PartyServiceClient.get();
 
 		RestResponse<Party> partyResp = partyServiceClient.getParty(username);
@@ -50,6 +53,7 @@ public class InstanceController {
 			if (insOpt.isPresent()) {
 				Instance ins = insOpt.get();
 				if (ins.getState().equals(InstanceState.READY.name()) && ins.getVersion().equals(version)) {
+					instanceService.setInstance(username);
 					return JS.message(HttpStatus.OK, ins);
 				}
 			}
@@ -62,16 +66,18 @@ public class InstanceController {
 			Instance hub = insOpt.get();
 			if (hub.getState().equals(InstanceState.READY.name()) && hub.getVersion().equals(version)) {
 				return JS.message(HttpStatus.OK, insOpt.get());
+			} else {
+				instanceService.removeInstanceFromPerson(username);
 			}
 		}
 
 		// Find the hub with the lowest numbers of players on it.
 		Optional<Instance> hubOpt = instanceService.getHubWithLeastAmountOfPlayers(version);
-
 		if (hubOpt.isPresent()) {
+			instanceService.setInstance(username);
 			return JS.message(HttpStatus.OK, hubOpt.get());
 		} else {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance selected");
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
 		}
 	}
 

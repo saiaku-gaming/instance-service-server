@@ -1,13 +1,19 @@
 CREATE TABLE instance (
-    owner TEXT NOT NULL,
-    instance_name TEXT PRIMARY KEY,
-    display_instance_name TEXT NOT NULL,
-    chest_item TEXT NOT NULL,
-    mainhand_armament TEXT NOT NULL,
-    off_hand_armament TEXT NOT NULL
+    instance_id TEXT PRIMARY KEY,
+    version TEXT NOT NULL,
+    level TEXT NOT NULL,
+    address TEXT,
+    port INT,
+    player_count INT NOT NULL, 
+    state TEXT NOT NULL
 );
 
 CREATE TABLE selected_instance (
-    owner TEXT PRIMARY KEY,
-    instance_name TEXT NOT NULL REFERENCES instance (instance_name) ON DELETE CASCADE
+    username TEXT PRIMARY KEY,
+    instance_id TEXT NOT NULL REFERENCES instance (instance_id) ON DELETE CASCADE
+)
+
+CREATE TABLE hub (
+    hub_id SERIAL,
+    instance_id TEXT REFERENCES instance (instance_id)
 )

@@ -1,6 +1,5 @@
 package com.valhallagame.instanceserviceserver.repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import javax.transaction.Transactional;
@@ -12,20 +11,16 @@ import org.springframework.data.repository.query.Param;
 
 import com.valhallagame.instanceserviceserver.model.Instance;
 
-public interface InstanceRepository extends JpaRepository<Instance, Integer> {
-	public Optional<Instance> findByInstanceName(String instanceName);
+public interface InstanceRepository extends JpaRepository<Instance, String> {
 	
-	public List<Instance> findByOwner(String owner);
-
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO selected_instance (owner, instance_name) "
-    		+ " VALUES (:owner, :instance_name)"
-    		+ "ON CONFLICT (owner) DO UPDATE SET instance_name = :instance_name", nativeQuery = true)
-	public void setSelectedInstance(@Param("owner") String owner, @Param("instance_name")  String instanceName);
+    @Query(value = "INSERT INTO selected_instance (username, instance_id) "
+    		+ " VALUES (:username, :instance_id)"
+    		+ "ON CONFLICT (username) DO UPDATE SET instance_id = :instance_id", nativeQuery = true)
+	public void setSelectedInstance(@Param("username") String username, @Param("instance_id") String instanceId);
     
-    @Query(value = "SELECT c.* from instance c join selected_instance sc USING (owner, instance_name) where sc.owner = :owner", nativeQuery = true)
-	public Optional<Instance> getSelectedInstance(@Param("owner") String owner);
+    @Query(value = "SELECT i.* from instance i join selected_instance si USING (instance_id) where si.username = :username", nativeQuery = true)
+	public Optional<Instance> getSelectedInstance(@Param("username") String username);
 
-	public Optional<Instance> getInstance(String member);
 }

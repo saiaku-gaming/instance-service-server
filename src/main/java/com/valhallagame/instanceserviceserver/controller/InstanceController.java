@@ -18,8 +18,10 @@ import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceC
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
 import com.valhallagame.instanceserviceserver.message.UsernameAndVersionParameter;
 import com.valhallagame.instanceserviceserver.message.CreateHubParameter;
+import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
+import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.Party;
@@ -32,6 +34,9 @@ public class InstanceController {
 	
 	@Autowired
 	private InstanceService instanceService;
+	
+	@Autowired
+	private HubService hubService;
 
 	//This should be removed, but used now for creating a game session
 	@RequestMapping(path = "/create-hub", method = RequestMethod.GET)
@@ -41,9 +46,9 @@ public class InstanceController {
 	}
 	
 	
-	@RequestMapping(path = "/get-game-session", method = RequestMethod.GET)
+	@RequestMapping(path = "/get-player-session", method = RequestMethod.GET)
 	@ResponseBody
-	public ResponseEntity<?> getGameSession(@RequestBody UsernameAndVersionParameter usernameAndVersion) throws IOException {
+	public ResponseEntity<?> getPlayerSession(@RequestBody UsernameAndVersionParameter usernameAndVersion) throws IOException {
 
 		String username = usernameAndVersion.getUsername();
 		String version = usernameAndVersion.getVersion();
@@ -62,7 +67,7 @@ public class InstanceController {
 		if (partyResp.isOk()) {
 			Party party = partyResp.getResponse().get();
 
-			Optional<Instance> insOpt = instanceService.getInstanceByPerson(party.getLeader());
+			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader());
 			if (correctVersionAndReady(insOpt, version)) {
 				return getSession(username, insOpt.get());
 			}
@@ -70,18 +75,20 @@ public class InstanceController {
 
 		// If user is not in a party but was playing an instance that has yet
 		// not died.
-		Optional<Instance> insOpt = instanceService.getInstanceByPerson(username);
+		Optional<Instance> insOpt = instanceService.getSelectedInstance(username);
 		if (correctVersionAndReady(insOpt, version)) {
 			return getSession(username, insOpt.get());
 		}
 
 		// Find the hub with the lowest numbers of players on it.
-		Optional<Instance> hubOpt = instanceService.getHubWithLeastAmountOfPlayers(version);
-		if (correctVersionAndReady(hubOpt, version)) {
-			return getSession(username, hubOpt.get());
-		} else {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
+		Optional<Hub> hubOpt = hubService.getHubWithLeastAmountOfPlayers(version);
+		if(hubOpt.isPresent()) {
+			Optional<Instance> instOpt = Optional.ofNullable(hubOpt.get().getInstance());
+			if (correctVersionAndReady(instOpt, version)) {
+				return getSession(username, instOpt.get());
+			} 
 		}
+		return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
 	}
 
 	private boolean correctVersionAndReady(Optional<Instance> insOpt, final String version) {

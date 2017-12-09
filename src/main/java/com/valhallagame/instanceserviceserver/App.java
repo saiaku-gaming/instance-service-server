@@ -17,8 +17,10 @@ public class App {
 	@Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() {
         return (container -> {
-            container.setPort(DefaultServicePortMappings.CHARACTER_SERVICE_PORT);
+            container.setPort(DefaultServicePortMappings.INSTANCE_SERVICE_PORT);
         });
     }
+	
+	
 
 }

@@ -17,7 +17,6 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
 import com.valhallagame.instanceserviceserver.message.UsernameAndVersionParameter;
-import com.valhallagame.instanceserviceserver.message.CreateHubParameter;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
@@ -38,13 +37,6 @@ public class InstanceController {
 	@Autowired
 	private HubService hubService;
 
-	//This should be removed, but used now for creating a game session
-	@RequestMapping(path = "/create-hub", method = RequestMethod.GET)
-	@ResponseBody
-	public ResponseEntity<?> createHub(@RequestBody CreateHubParameter input) throws IOException {
-		return JS.message(instanceContainerServiceClient.createInstance("valhalla", input.getVersion()));
-	}
-	
 	
 	@RequestMapping(path = "/get-player-session", method = RequestMethod.GET)
 	@ResponseBody

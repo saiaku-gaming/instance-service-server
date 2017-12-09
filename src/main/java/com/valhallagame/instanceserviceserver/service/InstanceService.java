@@ -26,7 +26,7 @@ public class InstanceService {
 	}
 
 	public Optional<Instance> getHubWithLeastAmountOfPlayers(String version) {
-		return null;
+		return Optional.empty();
 	}
 
 	public void removeInstanceFromPerson(String username) {
@@ -38,6 +38,6 @@ public class InstanceService {
 
 	public Optional<Instance> getInstanceByPerson(String leader) {
 		// TODO Auto-generated method stub
-		return null;
+		return Optional.empty();
 	}
 }

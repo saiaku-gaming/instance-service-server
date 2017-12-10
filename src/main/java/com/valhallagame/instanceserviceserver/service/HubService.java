@@ -12,6 +12,8 @@ import com.valhallagame.instanceserviceserver.repository.HubRepository;
 
 @Service
 public class HubService {
+	private static final String HUB_MAP = "ValhallaMap";
+
 	private static final int SOFT_MAX = 10;
 
 	@Autowired
@@ -34,7 +36,7 @@ public class HubService {
 		//Give it the old hub if we reached SOFT_MAX, 
 		//Give it the new hub if we could not find any old ones.
 		if(!hubOpt.isPresent() || (hubOpt.isPresent() && hubOpt.get().getInstance().getPlayerCount() > SOFT_MAX)) {
-			Optional<Instance> optInstance = instanceService.createInstance("valhalla", version);
+			Optional<Instance> optInstance = instanceService.createInstance(HUB_MAP, version);
 			if(optInstance.isPresent()) {
 				Instance instance = optInstance.get();
 				Hub hub = new Hub();

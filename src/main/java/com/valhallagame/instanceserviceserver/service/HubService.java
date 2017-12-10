@@ -34,9 +34,9 @@ public class HubService {
 		//Give it the old hub if we reached SOFT_MAX, 
 		//Give it the new hub if we could not find any old ones.
 		if(!hubOpt.isPresent() || (hubOpt.isPresent() && hubOpt.get().getInstance().getPlayerCount() > SOFT_MAX)) {
-			Optional<Instance> inst = instanceService.createInstance("valhalla", version);
-			if(inst.isPresent()) {
-				Instance instance = inst.get();
+			Optional<Instance> optInstance = instanceService.createInstance("valhalla", version);
+			if(optInstance.isPresent()) {
+				Instance instance = optInstance.get();
 				Hub hub = new Hub();
 				hub.setInstance(instance);
 				hub = hubRepository.save(hub);

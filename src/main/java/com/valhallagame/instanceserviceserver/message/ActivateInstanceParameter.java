@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsernameAndVersionParameter {
-	private String username;
-	private String version;
+public class ActivateInstanceParameter {
+	private String gameSessionId;
+	private String address;
+	private int port;
 }

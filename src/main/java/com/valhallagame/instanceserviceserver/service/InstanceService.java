@@ -16,39 +16,44 @@ import com.valhallagame.instanceserviceserver.repository.InstanceRepository;
 public class InstanceService {
 	@Autowired
 	private InstanceRepository instanceRepository;
-	
+
 	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
-	
+
+	public Instance saveInstance(Instance instance) {
+		return instanceRepository.save(instance);
+	}
 
 	public void deleteInstance(Instance local) {
 		instanceRepository.delete(local);
 	}
-	
+
+	public Optional<Instance> getInstance(String id) {
+		return instanceRepository.findInstanceById(id);
+	}
+
 	public Optional<Instance> getSelectedInstance(String person) {
 		return instanceRepository.getSelectedInstance(person.toLowerCase());
 	}
 
-	public void removeInstanceFromPerson(String username) {
-	}
-
-	public void setInstance(String username) {
-	
-	}
-
 	public Optional<Instance> createInstance(String level, String version) throws IOException {
 		RestResponse<String> createInstance = instanceContainerServiceClient.createInstance(level, version);
-		if(createInstance.isOk()) {
+		if (createInstance.isOk()) {
 			String gameSessionId = createInstance.getResponse().get();
-			
+
 			Instance instance = new Instance();
 			instance.setId(gameSessionId);
 			instance.setPlayerCount(0);
 			instance.setLevel(level);
 			instance.setState(InstanceState.STARTING.name());
-			
-			instance = instanceRepository.save(instance);
+			instance.setVersion(version);
+
+			instance = saveInstance(instance);
 			return Optional.of(instance);
 		}
 		return Optional.empty();
+	}
+
+	public void setSelectedInstance(String username, Instance instance) {
+		instanceRepository.setSelectedInstance(username, instance.getId());
 	}
 }

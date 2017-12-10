@@ -11,9 +11,9 @@ CREATE TABLE instance (
 CREATE TABLE selected_instance (
     username TEXT PRIMARY KEY,
     instance_id TEXT NOT NULL REFERENCES instance (instance_id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE hub (
     hub_id SERIAL,
     instance_id TEXT REFERENCES instance (instance_id)
-)
+);

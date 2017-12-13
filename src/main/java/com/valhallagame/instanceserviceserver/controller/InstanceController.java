@@ -60,7 +60,7 @@ public class InstanceController {
 		if (partyResp.isOk()) {
 			Party party = partyResp.getResponse().get();
 
-			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader());
+			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader(), version);
 			if (correctVersionAndActive(insOpt, version)) {
 				return getSession(username, insOpt.get());
 			}
@@ -68,7 +68,7 @@ public class InstanceController {
 
 		// If user is not in a party but was playing an instance that has yet
 		// not died.
-		Optional<Instance> insOpt = instanceService.getSelectedInstance(username);
+		Optional<Instance> insOpt = instanceService.getSelectedInstance(username, version);
 		if (insOpt.isPresent()) {
 			if (correctVersionAndActive(insOpt, version)) {
 				return getSession(username, insOpt.get());

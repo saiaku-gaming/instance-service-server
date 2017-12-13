@@ -31,8 +31,8 @@ public class InstanceService {
 		return instanceRepository.findInstanceById(id);
 	}
 
-	public Optional<Instance> getSelectedInstance(String person) {
-		return instanceRepository.getSelectedInstance(person.toLowerCase());
+	public Optional<Instance> getSelectedInstance(String person, String version) {
+		return instanceRepository.getSelectedInstance(person.toLowerCase(), version);
 	}
 
 	public Optional<Instance> createInstance(String level, String version) throws IOException {

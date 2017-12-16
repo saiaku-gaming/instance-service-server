@@ -16,6 +16,7 @@ import com.valhallagame.common.JS;
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
+import com.valhallagame.instanceserviceserver.message.DeactivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetPlayerSessionAndConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
 import com.valhallagame.instanceserviceserver.model.Hub;
@@ -108,6 +109,20 @@ public class InstanceController {
 		instance = instanceService.saveInstance(instance);
 
 		return JS.message(HttpStatus.OK, "Activated instance with id: " + input.getGameSessionId());
+	}
+
+	@RequestMapping(path = "/deactivate-instance", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> deactivateInstance(@RequestBody DeactivateInstanceParameter input) throws IOException {
+		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
+
+		if (!optInstance.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
+		}
+
+		instanceService.deleteInstance(optInstance.get());
+
+		return JS.message(HttpStatus.OK, "Deactivated instance with id: " + input.getGameSessionId());
 	}
 
 	private boolean correctVersionAndActive(Optional<Instance> insOpt, final String version) {

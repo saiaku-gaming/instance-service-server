@@ -3,6 +3,7 @@ package com.valhallagame.instanceserviceserver.controller;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,14 +15,19 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.valhallagame.common.JS;
 import com.valhallagame.common.RestResponse;
+import com.valhallagame.common.rabbitmq.NotificationMessage;
+import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.DeactivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetPlayerSessionAndConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
+import com.valhallagame.instanceserviceserver.message.StartDungeonParameter;
+import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
+import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
@@ -32,12 +38,19 @@ import com.valhallagame.partyserviceclient.model.Party;
 public class InstanceController {
 
 	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
+	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
 
 	@Autowired
 	private InstanceService instanceService;
 
 	@Autowired
 	private HubService hubService;
+
+	@Autowired
+	private DungeonService dungeonService;
+
+	@Autowired
+	private RabbitTemplate rabbitTemplate;
 
 	@RequestMapping(path = "/get-player-session-and-connection", method = RequestMethod.POST)
 	@ResponseBody
@@ -54,8 +67,6 @@ public class InstanceController {
 		if (username == null || username.isEmpty()) {
 			return JS.message(HttpStatus.BAD_REQUEST, "Missing username");
 		}
-
-		PartyServiceClient partyServiceClient = PartyServiceClient.get();
 
 		RestResponse<Party> partyResp = partyServiceClient.getParty(username);
 		if (partyResp.isOk()) {
@@ -108,6 +119,28 @@ public class InstanceController {
 
 		instance = instanceService.saveInstance(instance);
 
+		Optional<Dungeon> optDungeon = dungeonService.getDungeonByInstance(instance);
+
+		if (optDungeon.isPresent()) {
+			Dungeon dungeon = optDungeon.get();
+
+			instanceService.setSelectedInstance(dungeon.getOwner(), instance);
+
+			RestResponse<Party> partyResponse = partyServiceClient.getParty(dungeon.getOwner());
+			if (partyResponse.isOk()) {
+				Party party = partyResponse.getResponse().get();
+				for (String member : party.getPartyMembers()) {
+					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
+							new NotificationMessage(member, "Dungeon active!"));
+				}
+			} else {
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
+						new NotificationMessage(dungeon.getOwner(), "Dungeon active!"));
+			}
+		}
+
 		return JS.message(HttpStatus.OK, "Activated instance with id: " + input.getGameSessionId());
 	}
 
@@ -123,6 +156,40 @@ public class InstanceController {
 		instanceService.deleteInstance(optInstance.get());
 
 		return JS.message(HttpStatus.OK, "Deactivated instance with id: " + input.getGameSessionId());
+	}
+
+	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> startDungeon(@RequestBody StartDungeonParameter input) throws IOException {
+		Optional<Dungeon> optDungeon = dungeonService.getDungeonByOwner(input.getUsername());
+
+		if (optDungeon.isPresent()) {
+			return JS.message(HttpStatus.CONFLICT, "The user already has a dungeon");
+		}
+
+		RestResponse<String> instanceCreateResponse = instanceContainerServiceClient.createInstance(input.getMap(),
+				input.getVersion());
+
+		if (!instanceCreateResponse.isOk()) {
+			return JS.message(instanceCreateResponse);
+		}
+
+		Instance instance = new Instance();
+		instance.setId(instanceCreateResponse.getResponse().get());
+		instance.setLevel(input.getMap());
+		instance.setPlayerCount(0);
+		instance.setState(InstanceState.STARTING.name());
+		instance.setVersion(input.getVersion());
+
+		instance = instanceService.saveInstance(instance);
+
+		Dungeon dungeon = new Dungeon();
+		dungeon.setInstance(instance);
+		dungeon.setOwner(input.getUsername());
+
+		dungeon = dungeonService.saveDungeon(dungeon);
+
+		return JS.message(HttpStatus.OK, "Dungeon started");
 	}
 
 	private boolean correctVersionAndActive(Optional<Instance> insOpt, final String version) {

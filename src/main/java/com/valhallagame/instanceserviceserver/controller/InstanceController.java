@@ -31,7 +31,8 @@ import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.Party;
+import com.valhallagame.partyserviceclient.model.PartyMemberResponse;
+import com.valhallagame.partyserviceclient.model.PartyResponse;
 
 @Controller
 @RequestMapping(path = "/v1/instance")
@@ -68,11 +69,11 @@ public class InstanceController {
 			return JS.message(HttpStatus.BAD_REQUEST, "Missing username");
 		}
 
-		RestResponse<Party> partyResp = partyServiceClient.getParty(username);
+		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
 		if (partyResp.isOk()) {
-			Party party = partyResp.getResponse().get();
+			PartyResponse party = partyResp.getResponse().get();
 
-			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader(), version);
+			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader().getUsername(), version);
 			if (correctVersionAndActive(insOpt, version)) {
 				return getSession(username, insOpt.get());
 			}
@@ -126,13 +127,13 @@ public class InstanceController {
 
 			instanceService.setSelectedInstance(dungeon.getOwner(), instance);
 
-			RestResponse<Party> partyResponse = partyServiceClient.getParty(dungeon.getOwner());
+			RestResponse<PartyResponse> partyResponse = partyServiceClient.getParty(dungeon.getOwner());
 			if (partyResponse.isOk()) {
-				Party party = partyResponse.getResponse().get();
-				for (String member : party.getPartyMembers()) {
+				PartyResponse party = partyResponse.getResponse().get();
+				for (PartyMemberResponse member : party.getPartyMembers()) {
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-							new NotificationMessage(member, "Dungeon active!"));
+							new NotificationMessage(member.getUsername(), "Dungeon active!"));
 				}
 			} else {
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),

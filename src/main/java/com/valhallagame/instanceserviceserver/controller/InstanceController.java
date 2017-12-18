@@ -73,7 +73,7 @@ public class InstanceController {
 		if (partyResp.isOk()) {
 			PartyResponse party = partyResp.getResponse().get();
 
-			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader().getUsername(), version);
+			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader().getDisplayUsername().toLowerCase(), version);
 			if (correctVersionAndActive(insOpt, version)) {
 				return getSession(username, insOpt.get());
 			}
@@ -133,7 +133,7 @@ public class InstanceController {
 				for (PartyMemberResponse member : party.getPartyMembers()) {
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-							new NotificationMessage(member.getUsername(), "Dungeon active!"));
+							new NotificationMessage(member.getDisplayUsername().toLowerCase(), "Dungeon active!"));
 				}
 			} else {
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),

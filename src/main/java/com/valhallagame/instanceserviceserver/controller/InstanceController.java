@@ -25,6 +25,8 @@ import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.GetHubParameter;
 import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
+import com.valhallagame.instanceserviceserver.message.InstancePlayerLoginParameter;
+import com.valhallagame.instanceserviceserver.message.InstancePlayerLogoutParameter;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
 import com.valhallagame.instanceserviceserver.message.StartDungeonParameter;
 import com.valhallagame.instanceserviceserver.message.UpdateInstanceStateParameter;
@@ -79,7 +81,7 @@ public class InstanceController {
 	public ResponseEntity<?> getDungeonConnection(@RequestBody GetDungeonConnectionParameter input) throws IOException {
 
 		String version = input.getVersion();
-		
+
 		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
 		if (!instanceOpt.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found.");
@@ -227,6 +229,40 @@ public class InstanceController {
 		queuePlacement = queuePlacementService.saveQueuePlacement(queuePlacement);
 
 		return JS.message(HttpStatus.OK, "Dungeon started");
+	}
+
+	@RequestMapping(path = "/instance-player-login", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> instancePlayerLogin(@RequestBody InstancePlayerLoginParameter input) throws IOException {
+		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
+
+		if (!optInstance.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
+		}
+
+		Instance instance = optInstance.get();
+		instance.getMembers().add(input.getUsername());
+
+		instance = instanceService.saveInstance(instance);
+
+		return JS.message(HttpStatus.OK, "Player added to instance");
+	}
+
+	@RequestMapping(path = "/instance-player-logout", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> instancePlayerLogout(@RequestBody InstancePlayerLogoutParameter input) throws IOException {
+		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
+
+		if (!optInstance.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
+		}
+
+		Instance instance = optInstance.get();
+		instance.getMembers().remove(input.getUsername());
+
+		instance = instanceService.saveInstance(instance);
+
+		return JS.message(HttpStatus.OK, "Player removed from instance");
 	}
 
 	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {

@@ -31,8 +31,8 @@ public class InstanceService {
 		return instanceRepository.findInstanceById(id);
 	}
 
-	public Optional<Instance> createInstance(String level, String version) throws IOException {
-		RestResponse<String> createInstance = instanceContainerServiceClient.createInstance(level, version);
+	public Optional<Instance> createInstance(String level, String version, String creatorId) throws IOException {
+		RestResponse<String> createInstance = instanceContainerServiceClient.createInstance(level, version, creatorId);
 		if (createInstance.isOk()) {
 			String gameSessionId = createInstance.getResponse().get();
 

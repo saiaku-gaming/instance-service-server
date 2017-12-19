@@ -66,7 +66,7 @@ public class InstanceController {
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<?> getHub(@RequestBody GetHubParameter input) throws IOException {
-		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion());
+		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
 		}
@@ -209,7 +209,7 @@ public class InstanceController {
 		}
 
 		RestResponse<QueuePlacementDescription> createQueuePlacementResponse = instanceContainerServiceClient
-				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion());
+				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(), input.getUsername());
 
 		if (!createQueuePlacementResponse.isOk()) {
 			return JS.message(createQueuePlacementResponse);

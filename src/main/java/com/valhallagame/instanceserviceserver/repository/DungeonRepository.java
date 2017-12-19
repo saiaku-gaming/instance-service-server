@@ -15,8 +15,14 @@ public interface DungeonRepository extends JpaRepository<Dungeon, Integer> {
 
 	Optional<Dungeon> findDungeonByCreatorUsername(String username);
 
-	@Query(value = "SELECT * FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_party_id = :partyId AND d.state IN ('ACTIVE', 'STARTING') AND i.version = :version", nativeQuery = true)
+	@Query(value = "SELECT * FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_party_id = :partyId AND i.state IN ('ACTIVE', 'STARTING') AND i.version = :version", nativeQuery = true)
 	List<Dungeon> findRelevantDungeonsByPartyId(@Param("partyId") Integer partyId, @Param("version") String version);
 
 	Optional<Dungeon> findDungeonByOwnerUsername(String username);
+
+	@Query(value = "SELECT true FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.dungeon_id = :dungeonId AND d.owner_username = :username AND i.state IN ('ACTIVE') AND i.version = :version", nativeQuery = true)
+	boolean canAccessDungeon(@Param("username") String username, @Param("dungeonId") int dungeonId, @Param("version") String version);
+
+	@Query(value = "SELECT true FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.dungeon_id = :dungeonId AND d.owner_party_id = :partyId AND i.state IN ('ACTIVE') AND i.version = :version", nativeQuery = true)
+	boolean canAccessDungeon(@Param("partyId") Integer partyId, @Param("dungeonId") int dungeonId, @Param("version") String version);
 }

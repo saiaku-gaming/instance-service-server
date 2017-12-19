@@ -100,8 +100,7 @@ public class QueuePlacementJob {
 						NotificationMessage notificationMessage = new NotificationMessage(
 								member.getDisplayUsername().toLowerCase(), "Dungeon active!");
 
-						notificationMessage.addData("address", instance.getAddress());
-						notificationMessage.addData("port", instance.getPort());
+						notificationMessage.addData("gameSessionId", instance.getId());
 
 						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 								RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
@@ -110,8 +109,7 @@ public class QueuePlacementJob {
 					NotificationMessage notificationMessage = new NotificationMessage(
 							queuePlacement.getQueuerUsername(), "Dungeon active!");
 
-					notificationMessage.addData("address", instance.getAddress());
-					notificationMessage.addData("port", instance.getPort());
+					notificationMessage.addData("gameSessionId", instance.getId());
 
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);

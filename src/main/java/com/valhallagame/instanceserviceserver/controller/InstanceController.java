@@ -1,6 +1,8 @@
 package com.valhallagame.instanceserviceserver.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,18 +20,22 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
+import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
-import com.valhallagame.instanceserviceserver.message.DeactivateInstanceParameter;
-import com.valhallagame.instanceserviceserver.message.GetPlayerSessionAndConnectionParameter;
+import com.valhallagame.instanceserviceserver.message.GetHubParameter;
+import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
 import com.valhallagame.instanceserviceserver.message.StartDungeonParameter;
+import com.valhallagame.instanceserviceserver.message.UpdateInstanceStateParameter;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
+import com.valhallagame.instanceserviceserver.model.QueuePlacement;
 import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
+import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.PartyMemberResponse;
 import com.valhallagame.partyserviceclient.model.PartyResponse;
@@ -51,12 +57,25 @@ public class InstanceController {
 	private DungeonService dungeonService;
 
 	@Autowired
+	private QueuePlacementService queuePlacementService;
+
+	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
-	@RequestMapping(path = "/get-player-session-and-connection", method = RequestMethod.POST)
+	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> getPlayerSessionAndConnection(@RequestBody GetPlayerSessionAndConnectionParameter input)
-			throws IOException {
+	public ResponseEntity<?> getHub(@RequestBody GetHubParameter input) throws IOException {
+		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion());
+		if (!optHub.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
+		}
+
+		return getSession(input.getUsername(), optHub.get().getInstance());
+	}
+
+	@RequestMapping(path = "/get-relevant-dungeons", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> getRelevantDungeons(@RequestBody GetRelevantDungeonsParameter input) throws IOException {
 
 		String username = input.getUsername();
 		String version = input.getVersion();
@@ -69,39 +88,19 @@ public class InstanceController {
 			return JS.message(HttpStatus.BAD_REQUEST, "Missing username");
 		}
 
+		List<Dungeon> relevantDungeons = new ArrayList<>();
+
 		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
 		if (partyResp.isOk()) {
-			PartyResponse party = partyResp.getResponse().get();
-
-			Optional<Instance> insOpt = instanceService.getSelectedInstance(party.getLeader().getUsername(), version);
-			if (correctVersionAndActive(insOpt, version)) {
-				return getSession(username, insOpt.get());
+			relevantDungeons = dungeonService.getRelevantDungeonsFromParty(partyResp.getResponse().get(), version);
+		} else {
+			Optional<Dungeon> optDungeon = dungeonService.getDungeonFromOwnerUsername(username);
+			if (optDungeon.isPresent()) {
+				relevantDungeons.add(optDungeon.get());
 			}
 		}
 
-		// If user is not in a party but was playing an instance that has yet
-		// not died.
-		Optional<Instance> insOpt = instanceService.getSelectedInstance(username, version);
-		if (insOpt.isPresent()) {
-			if (correctVersionAndActive(insOpt, version)) {
-				return getSession(username, insOpt.get());
-			}
-
-			return JS.message(HttpStatus.NOT_FOUND, "Selected instance is not active. Please try again.");
-		}
-
-		// Find the hub with the lowest numbers of players in it.
-		Optional<Hub> hubOpt = hubService.getHubWithLeastAmountOfPlayers(version);
-		if (hubOpt.isPresent()) {
-			Optional<Instance> instOpt = Optional.ofNullable(hubOpt.get().getInstance());
-			if (instOpt.isPresent()) {
-				instanceService.setSelectedInstance(username, instOpt.get());
-			}
-			if (correctVersionAndActive(instOpt, version)) {
-				return getSession(username, instOpt.get());
-			}
-		}
-		return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
+		return JS.message(HttpStatus.OK, relevantDungeons);
 	}
 
 	@RequestMapping(path = "/activate-instance", method = RequestMethod.POST)
@@ -125,80 +124,77 @@ public class InstanceController {
 		if (optDungeon.isPresent()) {
 			Dungeon dungeon = optDungeon.get();
 
-			instanceService.setSelectedInstance(dungeon.getOwner(), instance);
-
-			RestResponse<PartyResponse> partyResponse = partyServiceClient.getParty(dungeon.getOwner());
+			RestResponse<PartyResponse> partyResponse = partyServiceClient.getParty(dungeon.getOwnerUsername());
 			if (partyResponse.isOk()) {
 				PartyResponse party = partyResponse.getResponse().get();
 				for (PartyMemberResponse member : party.getPartyMembers()) {
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-							new NotificationMessage(member.getUsername(), "Dungeon active!"));
+							new NotificationMessage(member.getDisplayUsername().toLowerCase(), "Dungeon active!"));
 				}
 			} else {
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-						new NotificationMessage(dungeon.getOwner(), "Dungeon active!"));
+						new NotificationMessage(dungeon.getOwnerUsername(), "Dungeon active!"));
 			}
 		}
 
 		return JS.message(HttpStatus.OK, "Activated instance with id: " + input.getGameSessionId());
 	}
 
-	@RequestMapping(path = "/deactivate-instance", method = RequestMethod.POST)
+	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> deactivateInstance(@RequestBody DeactivateInstanceParameter input) throws IOException {
+	public ResponseEntity<?> updateInstanceState(@RequestBody UpdateInstanceStateParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
 		}
 
-		instanceService.deleteInstance(optInstance.get());
+		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
+		Instance instance = optInstance.get();
 
-		return JS.message(HttpStatus.OK, "Deactivated instance with id: " + input.getGameSessionId());
+		switch (state) {
+		case FINISHED:
+			instanceService.deleteInstance(instance);
+			break;
+		case STARTING:
+			return JS.message(HttpStatus.BAD_REQUEST, "The state should never be set to STARTING from here!");
+		case ACTIVE:
+		case FINISHING:
+			instance.setState(state.name());
+		}
+
+		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
 	}
 
 	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<?> startDungeon(@RequestBody StartDungeonParameter input) throws IOException {
-		Optional<Dungeon> optDungeon = dungeonService.getDungeonByOwner(input.getUsername());
 
-		if (optDungeon.isPresent()) {
-			return JS.message(HttpStatus.CONFLICT, "The user already has a dungeon");
+		if (!dungeonService.canCreateDungeon(input.getUsername())) {
+			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
 		}
 
-		RestResponse<String> instanceCreateResponse = instanceContainerServiceClient.createInstance(input.getMap(),
-				input.getVersion());
+		RestResponse<QueuePlacementDescription> createQueuePlacementResponse = instanceContainerServiceClient
+				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion());
 
-		if (!instanceCreateResponse.isOk()) {
-			return JS.message(instanceCreateResponse);
+		if (!createQueuePlacementResponse.isOk()) {
+			return JS.message(createQueuePlacementResponse);
 		}
 
-		Instance instance = new Instance();
-		instance.setId(instanceCreateResponse.getResponse().get());
-		instance.setLevel(input.getMap());
-		instance.setPlayerCount(0);
-		instance.setState(InstanceState.STARTING.name());
-		instance.setVersion(input.getVersion());
+		QueuePlacementDescription queuePlacementDescription = createQueuePlacementResponse.getResponse().get();
 
-		instance = instanceService.saveInstance(instance);
+		QueuePlacement queuePlacement = new QueuePlacement();
+		queuePlacement.setId(queuePlacementDescription.getId());
+		queuePlacement.setMapName(input.getMap());
+		queuePlacement.setQueuerUsername(input.getUsername());
+		queuePlacement.setStatus(queuePlacementDescription.getStatus());
+		queuePlacement.setVersion(input.getVersion());
 
-		Dungeon dungeon = new Dungeon();
-		dungeon.setInstance(instance);
-		dungeon.setOwner(input.getUsername());
-
-		dungeon = dungeonService.saveDungeon(dungeon);
+		queuePlacement = queuePlacementService.saveQueuePlacement(queuePlacement);
 
 		return JS.message(HttpStatus.OK, "Dungeon started");
-	}
-
-	private boolean correctVersionAndActive(Optional<Instance> insOpt, final String version) {
-		return insOpt.map(ins -> {
-			boolean ready = ins.getState().equals(InstanceState.ACTIVE.name());
-			boolean sameVersion = ins.getVersion().equals(version);
-			return ready && sameVersion;
-		}).orElse(false);
 	}
 
 	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {
@@ -209,7 +205,6 @@ public class InstanceController {
 			String playerSession = playerSessionResp.getResponse().get();
 			SessionAndConnectionResponse sac = new SessionAndConnectionResponse(instance.getAddress(),
 					instance.getPort(), playerSession);
-			instanceService.setSelectedInstance(username, instance);
 			return JS.message(HttpStatus.OK, sac);
 		} else {
 			return JS.message(HttpStatus.NOT_FOUND, "No player session available. Please try again.");

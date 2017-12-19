@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetPlayerSessionAndConnectionParameter {
-	private String username;
-	private String version;
+public class UpdateInstanceStateParameter {
+	private String gameSessionId;
+	private String state;
 }

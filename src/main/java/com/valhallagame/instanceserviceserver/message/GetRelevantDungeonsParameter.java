@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeactivateInstanceParameter {
-	private String gameSessionId;
+public class GetRelevantDungeonsParameter {
+	private String username;
+	private String version;
 }

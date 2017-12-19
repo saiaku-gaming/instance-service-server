@@ -31,10 +31,6 @@ public class InstanceService {
 		return instanceRepository.findInstanceById(id);
 	}
 
-	public Optional<Instance> getSelectedInstance(String person, String version) {
-		return instanceRepository.getSelectedInstance(person.toLowerCase(), version);
-	}
-
 	public Optional<Instance> createInstance(String level, String version) throws IOException {
 		RestResponse<String> createInstance = instanceContainerServiceClient.createInstance(level, version);
 		if (createInstance.isOk()) {
@@ -42,7 +38,6 @@ public class InstanceService {
 
 			Instance instance = new Instance();
 			instance.setId(gameSessionId);
-			instance.setPlayerCount(0);
 			instance.setLevel(level);
 			instance.setState(InstanceState.STARTING.name());
 			instance.setVersion(version);
@@ -51,9 +46,5 @@ public class InstanceService {
 			return Optional.of(instance);
 		}
 		return Optional.empty();
-	}
-
-	public void setSelectedInstance(String username, Instance instance) {
-		instanceRepository.setSelectedInstance(username, instance.getId());
 	}
 }

@@ -30,6 +30,12 @@ public class Dungeon {
 	@JoinColumn(name = "instance_id")
 	private Instance instance;
 
-	@Column(name = "owner")
-	private String owner;
+	@Column(name = "owner_username")
+	private String ownerUsername;
+
+	@Column(name = "owner_party_id")
+	private Integer ownerPartyId;
+
+	@Column(name = "creator_username")
+	private String creatorUsername;
 }

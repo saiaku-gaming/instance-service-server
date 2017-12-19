@@ -22,6 +22,7 @@ import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
+import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.GetHubParameter;
 import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
 import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
@@ -71,6 +72,37 @@ public class InstanceController {
 		}
 
 		return getSession(input.getUsername(), optHub.get().getInstance());
+	}
+
+	@RequestMapping(path = "/get-dungeon-connection", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> getDungeonConnection(@RequestBody GetDungeonConnectionParameter input) throws IOException {
+
+		String version = input.getVersion();
+		
+		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
+		if (!instanceOpt.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found.");
+		}
+		Instance instance = instanceOpt.get();
+		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonByInstance(instance);
+		if (!dungeonOpt.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "That game session does not seem to be a dungeon!");
+		}
+
+		int dungeonId = dungeonOpt.get().getId();
+		String username = input.getUsername();
+
+		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
+		if (partyResp.isOk()) {
+			Integer partyId = partyResp.getResponse().get().getId();
+			if (dungeonService.canAccessDungeon(partyId, dungeonId, version)) {
+				return getSession(input.getUsername(), instanceOpt.get());
+			}
+		} else if (dungeonService.canAccessDungeon(username, dungeonId, version)) {
+			return getSession(input.getUsername(), instanceOpt.get());
+		}
+		return JS.message(HttpStatus.BAD_REQUEST, "Nope! You cant go there");
 	}
 
 	@RequestMapping(path = "/get-relevant-dungeons", method = RequestMethod.POST)

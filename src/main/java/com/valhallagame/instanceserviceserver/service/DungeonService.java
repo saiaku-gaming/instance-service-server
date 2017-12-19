@@ -69,4 +69,12 @@ public class DungeonService {
 	public Optional<Dungeon> getDungeonFromOwnerUsername(String username) {
 		return dungeonRepository.findDungeonByOwnerUsername(username);
 	}
+
+	public boolean canAccessDungeon(String username, int dungeonId, String version) {
+		return dungeonRepository.canAccessDungeon(username, dungeonId, version);
+	}
+
+	public boolean canAccessDungeon(Integer partyId, int dungeonId, String version) {
+		return dungeonRepository.canAccessDungeon(partyId, dungeonId, version);
+	}
 }

@@ -97,14 +97,24 @@ public class QueuePlacementJob {
 
 				if (party.isOk()) {
 					for (PartyMemberResponse member : party.getResponse().get().getPartyMembers()) {
+						NotificationMessage notificationMessage = new NotificationMessage(
+								member.getDisplayUsername().toLowerCase(), "Dungeon active!");
+
+						notificationMessage.addData("address", instance.getAddress());
+						notificationMessage.addData("port", instance.getPort());
+
 						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-								RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-								new NotificationMessage(member.getDisplayUsername().toLowerCase(), "Dungeon active!"));
+								RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 					}
 				} else {
+					NotificationMessage notificationMessage = new NotificationMessage(
+							queuePlacement.getQueuerUsername(), "Dungeon active!");
+
+					notificationMessage.addData("address", instance.getAddress());
+					notificationMessage.addData("port", instance.getPort());
+
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-							new NotificationMessage(queuePlacement.getQueuerUsername(), "Dungeon active!"));
+							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 				}
 			}
 		}

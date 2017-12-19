@@ -4,8 +4,8 @@ ALTER TABLE instance DROP COLUMN player_count;
 
 CREATE TABLE instance_member (
 	instance_member_id SERIAL NOT NULL,
-	instance_id INTEGER,
-	username TEXT
+	instance_id TEXT NOT NULL REFERENCES instance (instance_id) ON DELETE CASCADE,
+	username TEXT NOT NULL
 );
 
 ALTER TABLE dungeon RENAME COLUMN owner TO owner_username;

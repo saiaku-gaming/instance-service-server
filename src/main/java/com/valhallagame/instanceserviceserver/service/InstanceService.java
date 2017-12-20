@@ -47,4 +47,8 @@ public class InstanceService {
 		}
 		return Optional.empty();
 	}
+
+	public Optional<Instance> findInstanceByMember(String username) {
+		return instanceRepository.findInstanceByMembers(username);
+	}
 }

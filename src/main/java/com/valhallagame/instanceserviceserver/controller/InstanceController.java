@@ -21,6 +21,7 @@ import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
+import com.valhallagame.instanceserviceserver.message.GetAllPlayersInSameInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.GetHubParameter;
@@ -265,6 +266,21 @@ public class InstanceController {
 		return JS.message(HttpStatus.OK, "Player removed from instance");
 	}
 
+	@RequestMapping(path = "/get-all-players-in-same-instance", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> getAllPlayersInSameInstance(@RequestBody GetAllPlayersInSameInstanceParameter input) throws IOException {
+		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
+
+		if (!optInstance.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance for user :" + input.getUsername());
+		}
+
+		Instance instance = optInstance.get();
+		List<String> members = instance.getMembers();
+		members.remove(input.getUsername());
+		return JS.message(HttpStatus.OK, members);
+	}
+	
 	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {
 
 		RestResponse<String> playerSessionResp = instanceContainerServiceClient.createPlayerSession(username,

@@ -1,6 +1,7 @@
 package com.valhallagame.instanceserviceserver.service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,5 +47,9 @@ public class InstanceService {
 			return Optional.of(instance);
 		}
 		return Optional.empty();
+	}
+
+	public List<Instance> getAllInstances() {
+		return instanceRepository.findAll();
 	}
 }

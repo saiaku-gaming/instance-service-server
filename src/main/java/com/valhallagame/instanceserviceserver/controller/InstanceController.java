@@ -22,6 +22,7 @@ import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
+import com.valhallagame.instanceserviceserver.message.AddLocalInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.GetHubParameter;
 import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
@@ -42,6 +43,8 @@ import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.PartyMemberResponse;
 import com.valhallagame.partyserviceclient.model.PartyResponse;
+import com.valhallagame.personserviceclient.PersonServiceClient;
+import com.valhallagame.personserviceclient.model.Session;
 
 @Controller
 @RequestMapping(path = "/v1/instance")
@@ -49,6 +52,7 @@ public class InstanceController {
 
 	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
 	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
+	private static PersonServiceClient personServiceClient = PersonServiceClient.get();
 
 	@Autowired
 	private InstanceService instanceService;
@@ -211,7 +215,8 @@ public class InstanceController {
 		}
 
 		RestResponse<QueuePlacementDescription> createQueuePlacementResponse = instanceContainerServiceClient
-				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(), input.getUsername());
+				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(),
+						input.getUsername());
 
 		if (!createQueuePlacementResponse.isOk()) {
 			return JS.message(createQueuePlacementResponse);
@@ -235,15 +240,26 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<?> instancePlayerLogin(@RequestBody InstancePlayerLoginParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
-
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
 		}
+		RestResponse<Session> sessionFromToken = personServiceClient.getSessionFromToken(input.getToken());
+
+		if (!sessionFromToken.isOk()) {
+			return JS.message(sessionFromToken);
+		}
+		String username = sessionFromToken.getResponse().get().getPerson().getUsername();
 
 		Instance instance = optInstance.get();
-		instance.getMembers().add(input.getUsername());
+		instance.getMembers().add(username);
 
 		instance = instanceService.saveInstance(instance);
+
+		NotificationMessage notificationMessage = new NotificationMessage(username, "Person logged into instance");
+		notificationMessage.addData("gameSessionId", instance.getId());
+
+		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+				RabbitMQRouting.Instance.PERSON_LOGIN.name(), notificationMessage);
 
 		return JS.message(HttpStatus.OK, "Player added to instance");
 	}
@@ -262,7 +278,33 @@ public class InstanceController {
 
 		instance = instanceService.saveInstance(instance);
 
+		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+				RabbitMQRouting.Instance.PERSON_LOGOUT.name(),
+				new NotificationMessage(input.getUsername(), "Person logged out of an instance"));
+
 		return JS.message(HttpStatus.OK, "Player removed from instance");
+	}
+
+	@RequestMapping(path = "/get-all-instances", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity<?> getAllInstances() throws IOException {
+		return JS.message(HttpStatus.OK, instanceService.getAllInstances());
+	}
+
+	@RequestMapping(path = "/add-local-instance", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> addLocalInstance(@RequestBody AddLocalInstanceParameter input) throws IOException {
+		Instance localInstance = new Instance();
+		localInstance.setId(input.getGameSessionId());
+		localInstance.setAddress(input.getAddress());
+		localInstance.setPort(input.getPort());
+		localInstance.setLevel(input.getMapName());
+		localInstance.setState(input.getState());
+		localInstance.setVersion(input.getVersion());
+
+		instanceService.saveInstance(localInstance);
+
+		return JS.message(HttpStatus.OK, "Local instance added");
 	}
 
 	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {

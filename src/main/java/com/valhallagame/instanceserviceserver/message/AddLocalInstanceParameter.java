@@ -7,7 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InstancePlayerLoginParameter {
-	private String token;
+public class AddLocalInstanceParameter {
 	private String gameSessionId;
+	private String address;
+	private Integer port;
+	private String mapName;
+	private String state;
+	private String version;
 }

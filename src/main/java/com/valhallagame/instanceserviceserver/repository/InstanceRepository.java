@@ -8,4 +8,6 @@ import com.valhallagame.instanceserviceserver.model.Instance;
 
 public interface InstanceRepository extends JpaRepository<Instance, String> {
 	public Optional<Instance> findInstanceById(String id);
+
+	public Optional<Instance> findInstanceByMembers(String member);
 }

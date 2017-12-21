@@ -23,6 +23,7 @@ import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceC
 import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
 import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.AddLocalInstanceParameter;
+import com.valhallagame.instanceserviceserver.message.GetAllPlayersInSameInstanceParameter;
 import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
 import com.valhallagame.instanceserviceserver.message.GetHubParameter;
 import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
@@ -305,6 +306,22 @@ public class InstanceController {
 		instanceService.saveInstance(localInstance);
 
 		return JS.message(HttpStatus.OK, "Local instance added");
+	}
+
+	@RequestMapping(path = "/get-all-players-in-same-instance", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<?> getAllPlayersInSameInstance(@RequestBody GetAllPlayersInSameInstanceParameter input)
+			throws IOException {
+		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
+
+		if (!optInstance.isPresent()) {
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance for user :" + input.getUsername());
+		}
+
+		Instance instance = optInstance.get();
+		List<String> members = instance.getMembers();
+		members.remove(input.getUsername());
+		return JS.message(HttpStatus.OK, members);
 	}
 
 	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {

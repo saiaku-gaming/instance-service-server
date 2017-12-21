@@ -52,4 +52,8 @@ public class InstanceService {
 	public List<Instance> getAllInstances() {
 		return instanceRepository.findAll();
 	}
+
+	public Optional<Instance> findInstanceByMember(String username) {
+		return instanceRepository.findInstanceByMembers(username);
+	}
 }

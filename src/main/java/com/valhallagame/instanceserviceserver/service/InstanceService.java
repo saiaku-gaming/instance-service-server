@@ -3,6 +3,7 @@ package com.valhallagame.instanceserviceserver.service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,10 @@ public class InstanceService {
 
 	public void deleteInstance(Instance local) {
 		instanceRepository.delete(local);
+	}
+
+	public void deleteInstance(String instanceId) {
+		instanceRepository.delete(instanceId);
 	}
 
 	public Optional<Instance> getInstance(String id) {
@@ -55,5 +60,21 @@ public class InstanceService {
 
 	public Optional<Instance> findInstanceByMember(String username) {
 		return instanceRepository.findInstanceByMembers(username);
+	}
+
+	public void syncInstances() throws IOException {
+		RestResponse<List<String>> responseGameSessions = instanceContainerServiceClient.getGameSessions();
+		if (!responseGameSessions.isOk()) {
+			System.err.println("Unable to get all game sessions from instance container service");
+			return;
+		}
+
+		List<String> allInstancesIds = getAllInstances().stream().map(i -> i.getId()).collect(Collectors.toList());
+		List<String> gameSessionIds = responseGameSessions.getResponse().get();
+		allInstancesIds.removeAll(gameSessionIds);
+
+		for (String instanceId : allInstancesIds) {
+			deleteInstance(instanceId);
+		}
 	}
 }

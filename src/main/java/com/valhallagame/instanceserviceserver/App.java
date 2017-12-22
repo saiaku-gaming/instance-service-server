@@ -1,5 +1,9 @@
 package com.valhallagame.instanceserviceserver;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
@@ -13,6 +17,15 @@ import com.valhallagame.common.DefaultServicePortMappings;
 public class App {
 
 	public static void main(String[] args) {
+		if (args.length > 0) {
+			// override system properties with local properties
+			try (InputStream inputStream = new FileInputStream(args[0])) {
+				System.getProperties().load(inputStream);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
 		SpringApplication.run(App.class, args);
 	}
 

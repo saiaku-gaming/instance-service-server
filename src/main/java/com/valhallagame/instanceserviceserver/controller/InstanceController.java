@@ -22,17 +22,17 @@ import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
-import com.valhallagame.instanceserviceserver.message.ActivateInstanceParameter;
-import com.valhallagame.instanceserviceserver.message.AddLocalInstanceParameter;
-import com.valhallagame.instanceserviceserver.message.GetAllPlayersInSameInstanceParameter;
-import com.valhallagame.instanceserviceserver.message.GetDungeonConnectionParameter;
-import com.valhallagame.instanceserviceserver.message.GetHubParameter;
-import com.valhallagame.instanceserviceserver.message.GetRelevantDungeonsParameter;
-import com.valhallagame.instanceserviceserver.message.InstancePlayerLoginParameter;
-import com.valhallagame.instanceserviceserver.message.InstancePlayerLogoutParameter;
-import com.valhallagame.instanceserviceserver.message.SessionAndConnectionResponse;
-import com.valhallagame.instanceserviceserver.message.StartDungeonParameter;
-import com.valhallagame.instanceserviceserver.message.UpdateInstanceStateParameter;
+import com.valhallagame.instanceserviceclient.message.ActivateInstanceParameter;
+import com.valhallagame.instanceserviceclient.message.AddLocalInstanceParameter;
+import com.valhallagame.instanceserviceclient.message.GetAllPlayersInSameInstanceParameter;
+import com.valhallagame.instanceserviceclient.message.GetDungeonConnectionParameter;
+import com.valhallagame.instanceserviceclient.message.GetHubParameter;
+import com.valhallagame.instanceserviceclient.message.GetRelevantDungeonsParameter;
+import com.valhallagame.instanceserviceclient.message.InstancePlayerLoginParameter;
+import com.valhallagame.instanceserviceclient.message.InstancePlayerLogoutParameter;
+import com.valhallagame.instanceserviceclient.message.SessionAndConnection;
+import com.valhallagame.instanceserviceclient.message.StartDungeonParameter;
+import com.valhallagame.instanceserviceclient.message.UpdateInstanceStateParameter;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
@@ -334,7 +334,7 @@ public class InstanceController {
 		Optional<String> sessionIdOpt = playerSessionResp.get();
 		if (sessionIdOpt.isPresent()) {
 			String playerSession = sessionIdOpt.get();
-			SessionAndConnectionResponse sac = new SessionAndConnectionResponse(instance.getAddress(),
+			SessionAndConnection sac = new SessionAndConnection(instance.getAddress(),
 					instance.getPort(), playerSession);
 			return JS.message(HttpStatus.OK, sac);
 		} else {

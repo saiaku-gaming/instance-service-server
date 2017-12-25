@@ -39,10 +39,11 @@ public class DungeonService {
 	}
 
 	public boolean canCreateDungeon(String username) throws IOException {
-		RestResponse<PartyResponse> party = partyServiceClient.getParty(username);
+		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
 
-		if (party.isOk()
-				&& !party.getResponse().get().getLeader().getDisplayUsername().toLowerCase().equals(username)) {
+		Optional<PartyResponse> partyOpt = partyResp.get();
+		if (partyOpt.isPresent()
+				&& !partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username)) {
 			return false;
 		}
 
@@ -55,11 +56,7 @@ public class DungeonService {
 			return false;
 		}
 
-		if (queuePlacementService.getQueuePlacementFromQueuer(username).isPresent()) {
-			return false;
-		}
-
-		return true;
+		return !queuePlacementService.getQueuePlacementFromQueuer(username).isPresent();
 	}
 
 	public List<Dungeon> getRelevantDungeonsFromParty(PartyResponse party, String version) {

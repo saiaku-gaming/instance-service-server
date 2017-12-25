@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,9 @@ import com.valhallagame.instanceserviceserver.repository.InstanceRepository;
 
 @Service
 public class InstanceService {
+	
+	private static final Logger logger = LoggerFactory.getLogger(InstanceService.class);
+	
 	@Autowired
 	private InstanceRepository instanceRepository;
 
@@ -38,9 +43,10 @@ public class InstanceService {
 	}
 
 	public Optional<Instance> createInstance(String level, String version, String creatorId) throws IOException {
-		RestResponse<String> createInstance = instanceContainerServiceClient.createInstance(level, version, creatorId);
-		if (createInstance.isOk()) {
-			String gameSessionId = createInstance.getResponse().get();
+		RestResponse<String> gameSessionIdResp = instanceContainerServiceClient.createInstance(level, version, creatorId);
+		Optional<String> gameSessionIdOpt = gameSessionIdResp.get();
+		if (gameSessionIdOpt.isPresent()) {
+			String gameSessionId = gameSessionIdOpt.get();
 
 			Instance instance = new Instance();
 			instance.setId(gameSessionId);
@@ -63,14 +69,15 @@ public class InstanceService {
 	}
 
 	public void syncInstances() throws IOException {
-		RestResponse<List<String>> responseGameSessions = instanceContainerServiceClient.getGameSessions();
-		if (!responseGameSessions.isOk()) {
-			System.err.println("Unable to get all game sessions from instance container service");
+		RestResponse<List<String>> gameSessionsResp = instanceContainerServiceClient.getGameSessions();
+		Optional<List<String>> gameSessionsOpt = gameSessionsResp.get();
+		if (!gameSessionsOpt.isPresent()) {
+			logger.error("Unable to get all game sessions from instance container service");
 			return;
 		}
 
-		List<String> allInstancesIds = getAllInstances().stream().map(i -> i.getId()).collect(Collectors.toList());
-		List<String> gameSessionIds = responseGameSessions.getResponse().get();
+		List<String> allInstancesIds = getAllInstances().stream().map(Instance::getId).collect(Collectors.toList());
+		List<String> gameSessionIds = gameSessionsOpt.get();
 		allInstancesIds.removeAll(gameSessionIds);
 
 		for (String instanceId : allInstancesIds) {

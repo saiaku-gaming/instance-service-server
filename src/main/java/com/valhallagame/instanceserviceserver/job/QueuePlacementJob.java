@@ -3,6 +3,7 @@ package com.valhallagame.instanceserviceserver.job;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,15 +55,16 @@ public class QueuePlacementJob {
 			return;
 		}
 
-		RestResponse<List<QueuePlacementDescription>> queuePlacementInfo = instanceContainerServiceClient
-				.getQueuePlacementInfo(allQueuePlacements.stream().map(qp -> qp.getId()).collect(Collectors.toList()));
-
-		if (!queuePlacementInfo.isOk()) {
+		RestResponse<List<QueuePlacementDescription>> queuePlacementInfoResp = instanceContainerServiceClient
+				.getQueuePlacementInfo(allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
+		Optional<List<QueuePlacementDescription>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
+		
+		if (!queuePlacementInfoOpt.isPresent()) {
 			return;
 		}
 
-		Map<String, QueuePlacementDescription> collect = queuePlacementInfo.getResponse().get().stream()
-				.collect(Collectors.toMap(qpd -> qpd.getId(), Function.identity()));
+		Map<String, QueuePlacementDescription> collect = queuePlacementInfoOpt.get().stream()
+				.collect(Collectors.toMap(QueuePlacementDescription::getId, Function.identity()));
 
 		for (QueuePlacement queuePlacement : allQueuePlacements) {
 			QueuePlacementDescription queuePlacementDescription = collect.get(queuePlacement.getId());
@@ -81,22 +83,22 @@ public class QueuePlacementJob {
 				Dungeon dungeon = new Dungeon();
 				dungeon.setInstance(instance);
 
-				RestResponse<PartyResponse> party = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
-
-				if (party.isOk()) {
-					dungeon.setOwnerPartyId(party.getResponse().get().getId());
+				RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
+				Optional<PartyResponse> partyOpt = partyResp.get();
+				if (partyOpt.isPresent()) {
+					dungeon.setOwnerPartyId(partyOpt.get().getId());
 				} else {
 					dungeon.setOwnerUsername(queuePlacement.getQueuerUsername());
 				}
 
 				dungeon.setCreatorUsername(queuePlacement.getQueuerUsername());
 
-				dungeon = dungeonService.saveDungeon(dungeon);
+				dungeonService.saveDungeon(dungeon);
 
 				queuePlacementService.deleteQueuePlacement(queuePlacement);
 
-				if (party.isOk()) {
-					for (PartyMemberResponse member : party.getResponse().get().getPartyMembers()) {
+				if (partyOpt.isPresent()) {
+					for (PartyMemberResponse member : partyOpt.get().getPartyMembers()) {
 						NotificationMessage notificationMessage = new NotificationMessage(
 								member.getDisplayUsername().toLowerCase(), "Dungeon active!");
 

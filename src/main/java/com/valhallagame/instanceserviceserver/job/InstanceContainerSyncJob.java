@@ -2,6 +2,8 @@ package com.valhallagame.instanceserviceserver.job;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +14,8 @@ import com.valhallagame.instanceserviceserver.service.InstanceService;
 @Component
 @Profile("production")
 public class InstanceContainerSyncJob {
+	
+	private static final Logger logger = LoggerFactory.getLogger(InstanceContainerSyncJob.class);
 
 	@Autowired
 	private InstanceService instanceService;
@@ -21,7 +25,7 @@ public class InstanceContainerSyncJob {
 		try {
 			instanceService.syncInstances();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("Failed sync", e);
 		}
 	}
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.valhallagame.common.JS;
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
@@ -72,7 +73,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> getHub(@RequestBody GetHubParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getHub(@RequestBody GetHubParameter input) throws IOException {
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
@@ -83,7 +84,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-dungeon-connection", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> getDungeonConnection(@RequestBody GetDungeonConnectionParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getDungeonConnection(@RequestBody GetDungeonConnectionParameter input) throws IOException {
 
 		String version = input.getVersion();
 
@@ -101,8 +102,9 @@ public class InstanceController {
 		String username = input.getUsername();
 
 		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
-		if (partyResp.isOk()) {
-			Integer partyId = partyResp.getResponse().get().getId();
+		Optional<PartyResponse> partyOpt = partyResp.get();
+		if (partyOpt.isPresent()) {
+			Integer partyId = partyOpt.get().getId();
 			if (dungeonService.canAccessDungeon(partyId, dungeonId, version)) {
 				return getSession(input.getUsername(), instanceOpt.get());
 			}
@@ -114,7 +116,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-relevant-dungeons", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> getRelevantDungeons(@RequestBody GetRelevantDungeonsParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getRelevantDungeons(@RequestBody GetRelevantDungeonsParameter input) throws IOException {
 
 		String username = input.getUsername();
 		String version = input.getVersion();
@@ -130,8 +132,9 @@ public class InstanceController {
 		List<Dungeon> relevantDungeons = new ArrayList<>();
 
 		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
-		if (partyResp.isOk()) {
-			relevantDungeons = dungeonService.getRelevantDungeonsFromParty(partyResp.getResponse().get(), version);
+		Optional<PartyResponse> partyOpt = partyResp.get();
+		if (partyOpt.isPresent()) {
+			relevantDungeons = dungeonService.getRelevantDungeonsFromParty(partyOpt.get(), version);
 		} else {
 			Optional<Dungeon> optDungeon = dungeonService.getDungeonFromOwnerUsername(username);
 			if (optDungeon.isPresent()) {
@@ -144,11 +147,11 @@ public class InstanceController {
 
 	@RequestMapping(path = "/activate-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> activateInstance(@RequestBody ActivateInstanceParameter input) throws IOException {
+	public ResponseEntity<JsonNode> activateInstance(@RequestBody ActivateInstanceParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
 		}
 
 		Instance instance = optInstance.get();
@@ -164,8 +167,9 @@ public class InstanceController {
 			Dungeon dungeon = optDungeon.get();
 
 			RestResponse<PartyResponse> partyResponse = partyServiceClient.getParty(dungeon.getOwnerUsername());
-			if (partyResponse.isOk()) {
-				PartyResponse party = partyResponse.getResponse().get();
+			Optional<PartyResponse> partyOpt = partyResponse.get();
+			if (partyOpt.isPresent()) {
+				PartyResponse party = partyOpt.get();
 				for (PartyMemberResponse member : party.getPartyMembers()) {
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
@@ -178,16 +182,16 @@ public class InstanceController {
 			}
 		}
 
-		return JS.message(HttpStatus.OK, "Activated instance with id: " + input.getGameSessionId());
+		return JS.message(HttpStatus.OK, "Activated instance with id: %s", input.getGameSessionId());
 	}
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> updateInstanceState(@RequestBody UpdateInstanceStateParameter input) throws IOException {
+	public ResponseEntity<JsonNode> updateInstanceState(@RequestBody UpdateInstanceStateParameter input) {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
 		}
 
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
@@ -209,7 +213,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> startDungeon(@RequestBody StartDungeonParameter input) throws IOException {
+	public ResponseEntity<JsonNode> startDungeon(@RequestBody StartDungeonParameter input) throws IOException {
 
 		if (!dungeonService.canCreateDungeon(input.getUsername())) {
 			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
@@ -218,12 +222,12 @@ public class InstanceController {
 		RestResponse<QueuePlacementDescription> createQueuePlacementResponse = instanceContainerServiceClient
 				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(),
 						input.getUsername());
-
-		if (!createQueuePlacementResponse.isOk()) {
+		Optional<QueuePlacementDescription> createQueuePlacementOpt = createQueuePlacementResponse.get();
+		if (!createQueuePlacementOpt.isPresent()) {
 			return JS.message(createQueuePlacementResponse);
 		}
 
-		QueuePlacementDescription queuePlacementDescription = createQueuePlacementResponse.getResponse().get();
+		QueuePlacementDescription queuePlacementDescription = createQueuePlacementOpt.get();
 
 		QueuePlacement queuePlacement = new QueuePlacement();
 		queuePlacement.setId(queuePlacementDescription.getId());
@@ -232,24 +236,24 @@ public class InstanceController {
 		queuePlacement.setStatus(queuePlacementDescription.getStatus());
 		queuePlacement.setVersion(input.getVersion());
 
-		queuePlacement = queuePlacementService.saveQueuePlacement(queuePlacement);
+		queuePlacementService.saveQueuePlacement(queuePlacement);
 
 		return JS.message(HttpStatus.OK, "Dungeon started");
 	}
 
 	@RequestMapping(path = "/instance-player-login", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> instancePlayerLogin(@RequestBody InstancePlayerLoginParameter input) throws IOException {
+	public ResponseEntity<JsonNode> instancePlayerLogin(@RequestBody InstancePlayerLoginParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
 		}
-		RestResponse<Session> sessionFromToken = personServiceClient.getSessionFromToken(input.getToken());
-
-		if (!sessionFromToken.isOk()) {
-			return JS.message(sessionFromToken);
+		RestResponse<Session> sessionResp = personServiceClient.getSessionFromToken(input.getToken());
+		Optional<Session> sessionOpt = sessionResp.get();
+		if (!sessionOpt.isPresent()) {
+			return JS.message(sessionResp);
 		}
-		String username = sessionFromToken.getResponse().get().getPerson().getUsername();
+		String username = sessionOpt.get().getPerson().getUsername();
 
 		Instance instance = optInstance.get();
 		instance.getMembers().add(username);
@@ -267,7 +271,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/instance-player-logout", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> instancePlayerLogout(@RequestBody InstancePlayerLogoutParameter input) throws IOException {
+	public ResponseEntity<JsonNode> instancePlayerLogout(@RequestBody InstancePlayerLogoutParameter input) {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -277,7 +281,7 @@ public class InstanceController {
 		Instance instance = optInstance.get();
 		instance.getMembers().remove(input.getUsername());
 
-		instance = instanceService.saveInstance(instance);
+		instanceService.saveInstance(instance);
 
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.PERSON_LOGOUT.name(),
@@ -288,13 +292,13 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-all-instances", method = RequestMethod.GET)
 	@ResponseBody
-	public ResponseEntity<?> getAllInstances() throws IOException {
+	public ResponseEntity<JsonNode> getAllInstances() {
 		return JS.message(HttpStatus.OK, instanceService.getAllInstances());
 	}
 
 	@RequestMapping(path = "/add-local-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> addLocalInstance(@RequestBody AddLocalInstanceParameter input) throws IOException {
+	public ResponseEntity<JsonNode> addLocalInstance(@RequestBody AddLocalInstanceParameter input) {
 		Instance localInstance = new Instance();
 		localInstance.setId(input.getGameSessionId());
 		localInstance.setAddress(input.getAddress());
@@ -310,8 +314,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-all-players-in-same-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<?> getAllPlayersInSameInstance(@RequestBody GetAllPlayersInSameInstanceParameter input)
-			throws IOException {
+	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(@RequestBody GetAllPlayersInSameInstanceParameter input) {
 		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
 
 		if (!optInstance.isPresent()) {
@@ -324,12 +327,13 @@ public class InstanceController {
 		return JS.message(HttpStatus.OK, members);
 	}
 
-	private ResponseEntity<?> getSession(String username, Instance instance) throws IOException {
+	private ResponseEntity<JsonNode> getSession(String username, Instance instance) throws IOException {
 
 		RestResponse<String> playerSessionResp = instanceContainerServiceClient.createPlayerSession(username,
 				instance.getId());
-		if (playerSessionResp.isOk()) {
-			String playerSession = playerSessionResp.getResponse().get();
+		Optional<String> sessionIdOpt = playerSessionResp.get();
+		if (sessionIdOpt.isPresent()) {
+			String playerSession = sessionIdOpt.get();
 			SessionAndConnectionResponse sac = new SessionAndConnectionResponse(instance.getAddress(),
 					instance.getPort(), playerSession);
 			return JS.message(HttpStatus.OK, sac);

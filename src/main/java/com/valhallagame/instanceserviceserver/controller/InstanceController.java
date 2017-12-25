@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -73,7 +75,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getHub(@RequestBody GetHubParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getHub(@Valid @RequestBody GetHubParameter input) throws IOException {
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
@@ -84,7 +86,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-dungeon-connection", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getDungeonConnection(@RequestBody GetDungeonConnectionParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getDungeonConnection(@Valid @RequestBody GetDungeonConnectionParameter input) throws IOException {
 
 		String version = input.getVersion();
 
@@ -116,7 +118,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-relevant-dungeons", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getRelevantDungeons(@RequestBody GetRelevantDungeonsParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getRelevantDungeons(@Valid @RequestBody GetRelevantDungeonsParameter input) throws IOException {
 
 		String username = input.getUsername();
 		String version = input.getVersion();
@@ -147,7 +149,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/activate-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> activateInstance(@RequestBody ActivateInstanceParameter input) throws IOException {
+	public ResponseEntity<JsonNode> activateInstance(@Valid @RequestBody ActivateInstanceParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -187,7 +189,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> updateInstanceState(@RequestBody UpdateInstanceStateParameter input) {
+	public ResponseEntity<JsonNode> updateInstanceState(@Valid @RequestBody UpdateInstanceStateParameter input) {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -213,7 +215,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> startDungeon(@RequestBody StartDungeonParameter input) throws IOException {
+	public ResponseEntity<JsonNode> startDungeon(@Valid @RequestBody StartDungeonParameter input) throws IOException {
 
 		if (!dungeonService.canCreateDungeon(input.getUsername())) {
 			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
@@ -243,7 +245,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/instance-player-login", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> instancePlayerLogin(@RequestBody InstancePlayerLoginParameter input) throws IOException {
+	public ResponseEntity<JsonNode> instancePlayerLogin(@Valid @RequestBody InstancePlayerLoginParameter input) throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
@@ -271,7 +273,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/instance-player-logout", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> instancePlayerLogout(@RequestBody InstancePlayerLogoutParameter input) {
+	public ResponseEntity<JsonNode> instancePlayerLogout(@Valid @RequestBody InstancePlayerLogoutParameter input) {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -298,7 +300,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/add-local-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> addLocalInstance(@RequestBody AddLocalInstanceParameter input) {
+	public ResponseEntity<JsonNode> addLocalInstance(@Valid @RequestBody AddLocalInstanceParameter input) {
 		Instance localInstance = new Instance();
 		localInstance.setId(input.getGameSessionId());
 		localInstance.setAddress(input.getAddress());
@@ -314,7 +316,7 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-all-players-in-same-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(@RequestBody GetAllPlayersInSameInstanceParameter input) {
+	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(@Valid @RequestBody GetAllPlayersInSameInstanceParameter input) {
 		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
 
 		if (!optInstance.isPresent()) {

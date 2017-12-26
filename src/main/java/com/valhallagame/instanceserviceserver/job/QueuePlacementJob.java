@@ -70,53 +70,58 @@ public class QueuePlacementJob {
 			QueuePlacementDescriptionData queuePlacementDescription = collect.get(queuePlacement.getId());
 
 			if (queuePlacementDescription.getStatus().equals(QueuePlacementStatus.FULFILLED.name())) {
-				Instance instance = new Instance();
-				instance.setId(queuePlacementDescription.getGameSessionId());
-				instance.setAddress(queuePlacementDescription.getAddress());
-				instance.setLevel(queuePlacement.getMapName());
-				instance.setPort(queuePlacementDescription.getPort());
-				instance.setState(InstanceState.ACTIVE.name());
-				instance.setVersion(queuePlacement.getVersion());
-
-				instance = instanceService.saveInstance(instance);
-
-				Dungeon dungeon = new Dungeon();
-				dungeon.setInstance(instance);
-
-				RestResponse<PartyData> partyResp = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
-				Optional<PartyData> partyOpt = partyResp.get();
-				if (partyOpt.isPresent()) {
-					dungeon.setOwnerPartyId(partyOpt.get().getId());
-				} else {
-					dungeon.setOwnerUsername(queuePlacement.getQueuerUsername());
-				}
-
-				dungeon.setCreatorUsername(queuePlacement.getQueuerUsername());
-
-				dungeonService.saveDungeon(dungeon);
-
-				queuePlacementService.deleteQueuePlacement(queuePlacement);
-
-				if (partyOpt.isPresent()) {
-					for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
-						NotificationMessage notificationMessage = new NotificationMessage(
-								member.getDisplayUsername().toLowerCase(), "Dungeon active!");
-
-						notificationMessage.addData("gameSessionId", instance.getId());
-
-						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-								RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
-					}
-				} else {
-					NotificationMessage notificationMessage = new NotificationMessage(
-							queuePlacement.getQueuerUsername(), "Dungeon active!");
-
-					notificationMessage.addData("gameSessionId", instance.getId());
-
-					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
-				}
+				saveInstanceAndNotify(queuePlacement, queuePlacementDescription);
 			}
+		}
+	}
+
+	private void saveInstanceAndNotify(QueuePlacement queuePlacement, QueuePlacementDescriptionData queuePlacementDescription)
+			throws IOException {
+		Instance instance = new Instance();
+		instance.setId(queuePlacementDescription.getGameSessionId());
+		instance.setAddress(queuePlacementDescription.getAddress());
+		instance.setLevel(queuePlacement.getMapName());
+		instance.setPort(queuePlacementDescription.getPort());
+		instance.setState(InstanceState.ACTIVE.name());
+		instance.setVersion(queuePlacement.getVersion());
+
+		instance = instanceService.saveInstance(instance);
+
+		Dungeon dungeon = new Dungeon();
+		dungeon.setInstance(instance);
+
+		RestResponse<PartyData> partyResp = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
+		Optional<PartyData> partyOpt = partyResp.get();
+		if (partyOpt.isPresent()) {
+			dungeon.setOwnerPartyId(partyOpt.get().getId());
+		} else {
+			dungeon.setOwnerUsername(queuePlacement.getQueuerUsername());
+		}
+
+		dungeon.setCreatorUsername(queuePlacement.getQueuerUsername());
+
+		dungeonService.saveDungeon(dungeon);
+
+		queuePlacementService.deleteQueuePlacement(queuePlacement);
+
+		if (partyOpt.isPresent()) {
+			for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
+				NotificationMessage notificationMessage = new NotificationMessage(
+						member.getDisplayUsername().toLowerCase(), "Dungeon active!");
+
+				notificationMessage.addData("gameSessionId", instance.getId());
+
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
+			}
+		} else {
+			NotificationMessage notificationMessage = new NotificationMessage(
+					queuePlacement.getQueuerUsername(), "Dungeon active!");
+
+			notificationMessage.addData("gameSessionId", instance.getId());
+
+			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+					RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 		}
 	}
 }

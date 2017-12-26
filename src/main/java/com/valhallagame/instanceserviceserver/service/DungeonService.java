@@ -13,7 +13,7 @@ import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.repository.DungeonRepository;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyResponse;
+import com.valhallagame.partyserviceclient.model.PartyData;
 
 @Service
 public class DungeonService {
@@ -39,9 +39,9 @@ public class DungeonService {
 	}
 
 	public boolean canCreateDungeon(String username) throws IOException {
-		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
+		RestResponse<PartyData> partyResp = partyServiceClient.getParty(username);
 
-		Optional<PartyResponse> partyOpt = partyResp.get();
+		Optional<PartyData> partyOpt = partyResp.get();
 		if (partyOpt.isPresent()
 				&& !partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username)) {
 			return false;
@@ -59,7 +59,7 @@ public class DungeonService {
 		return !queuePlacementService.getQueuePlacementFromQueuer(username).isPresent();
 	}
 
-	public List<Dungeon> getRelevantDungeonsFromParty(PartyResponse party, String version) {
+	public List<Dungeon> getRelevantDungeonsFromParty(PartyData party, String version) {
 		return dungeonRepository.findRelevantDungeonsByPartyId(party.getId(), version);
 	}
 

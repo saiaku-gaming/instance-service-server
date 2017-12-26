@@ -23,7 +23,7 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
-import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
+import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceclient.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.AddLocalInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.GetAllPlayersInSameInstanceParameter;
@@ -32,9 +32,9 @@ import com.valhallagame.instanceserviceclient.message.GetHubParameter;
 import com.valhallagame.instanceserviceclient.message.GetRelevantDungeonsParameter;
 import com.valhallagame.instanceserviceclient.message.InstancePlayerLoginParameter;
 import com.valhallagame.instanceserviceclient.message.InstancePlayerLogoutParameter;
-import com.valhallagame.instanceserviceclient.message.SessionAndConnection;
 import com.valhallagame.instanceserviceclient.message.StartDungeonParameter;
 import com.valhallagame.instanceserviceclient.message.UpdateInstanceStateParameter;
+import com.valhallagame.instanceserviceclient.model.SessionAndConnectionData;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
@@ -45,10 +45,10 @@ import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyMemberResponse;
-import com.valhallagame.partyserviceclient.model.PartyResponse;
+import com.valhallagame.partyserviceclient.model.PartyMemberData;
+import com.valhallagame.partyserviceclient.model.PartyData;
 import com.valhallagame.personserviceclient.PersonServiceClient;
-import com.valhallagame.personserviceclient.model.Session;
+import com.valhallagame.personserviceclient.model.SessionData;
 
 @Controller
 @RequestMapping(path = "/v1/instance")
@@ -103,8 +103,8 @@ public class InstanceController {
 		int dungeonId = dungeonOpt.get().getId();
 		String username = input.getUsername();
 
-		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
-		Optional<PartyResponse> partyOpt = partyResp.get();
+		RestResponse<PartyData> partyResp = partyServiceClient.getParty(username);
+		Optional<PartyData> partyOpt = partyResp.get();
 		if (partyOpt.isPresent()) {
 			Integer partyId = partyOpt.get().getId();
 			if (dungeonService.canAccessDungeon(partyId, dungeonId, version)) {
@@ -133,8 +133,8 @@ public class InstanceController {
 
 		List<Dungeon> relevantDungeons = new ArrayList<>();
 
-		RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(username);
-		Optional<PartyResponse> partyOpt = partyResp.get();
+		RestResponse<PartyData> partyResp = partyServiceClient.getParty(username);
+		Optional<PartyData> partyOpt = partyResp.get();
 		if (partyOpt.isPresent()) {
 			relevantDungeons = dungeonService.getRelevantDungeonsFromParty(partyOpt.get(), version);
 		} else {
@@ -168,11 +168,11 @@ public class InstanceController {
 		if (optDungeon.isPresent()) {
 			Dungeon dungeon = optDungeon.get();
 
-			RestResponse<PartyResponse> partyResponse = partyServiceClient.getParty(dungeon.getOwnerUsername());
-			Optional<PartyResponse> partyOpt = partyResponse.get();
+			RestResponse<PartyData> partyResponse = partyServiceClient.getParty(dungeon.getOwnerUsername());
+			Optional<PartyData> partyOpt = partyResponse.get();
 			if (partyOpt.isPresent()) {
-				PartyResponse party = partyOpt.get();
-				for (PartyMemberResponse member : party.getPartyMembers()) {
+				PartyData party = partyOpt.get();
+				for (PartyMemberData member : party.getPartyMembers()) {
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
 							new NotificationMessage(member.getDisplayUsername().toLowerCase(), "Dungeon active!"));
@@ -221,15 +221,15 @@ public class InstanceController {
 			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
 		}
 
-		RestResponse<QueuePlacementDescription> createQueuePlacementResponse = instanceContainerServiceClient
+		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
 				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(),
 						input.getUsername());
-		Optional<QueuePlacementDescription> createQueuePlacementOpt = createQueuePlacementResponse.get();
+		Optional<QueuePlacementDescriptionData> createQueuePlacementOpt = createQueuePlacementResponse.get();
 		if (!createQueuePlacementOpt.isPresent()) {
 			return JS.message(createQueuePlacementResponse);
 		}
 
-		QueuePlacementDescription queuePlacementDescription = createQueuePlacementOpt.get();
+		QueuePlacementDescriptionData queuePlacementDescription = createQueuePlacementOpt.get();
 
 		QueuePlacement queuePlacement = new QueuePlacement();
 		queuePlacement.setId(queuePlacementDescription.getId());
@@ -250,8 +250,8 @@ public class InstanceController {
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
 		}
-		RestResponse<Session> sessionResp = personServiceClient.getSessionFromToken(input.getToken());
-		Optional<Session> sessionOpt = sessionResp.get();
+		RestResponse<SessionData> sessionResp = personServiceClient.getSessionFromToken(input.getToken());
+		Optional<SessionData> sessionOpt = sessionResp.get();
 		if (!sessionOpt.isPresent()) {
 			return JS.message(sessionResp);
 		}
@@ -336,7 +336,7 @@ public class InstanceController {
 		Optional<String> sessionIdOpt = playerSessionResp.get();
 		if (sessionIdOpt.isPresent()) {
 			String playerSession = sessionIdOpt.get();
-			SessionAndConnection sac = new SessionAndConnection(instance.getAddress(),
+			SessionAndConnectionData sac = new SessionAndConnectionData(instance.getAddress(),
 					instance.getPort(), playerSession);
 			return JS.message(HttpStatus.OK, sac);
 		} else {

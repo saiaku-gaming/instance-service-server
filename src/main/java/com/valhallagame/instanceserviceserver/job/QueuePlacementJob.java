@@ -16,7 +16,7 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
-import com.valhallagame.instancecontainerserviceclient.message.QueuePlacementDescription;
+import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
@@ -26,8 +26,8 @@ import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyMemberResponse;
-import com.valhallagame.partyserviceclient.model.PartyResponse;
+import com.valhallagame.partyserviceclient.model.PartyMemberData;
+import com.valhallagame.partyserviceclient.model.PartyData;
 
 @Component
 public class QueuePlacementJob {
@@ -55,19 +55,19 @@ public class QueuePlacementJob {
 			return;
 		}
 
-		RestResponse<List<QueuePlacementDescription>> queuePlacementInfoResp = instanceContainerServiceClient
+		RestResponse<List<QueuePlacementDescriptionData>> queuePlacementInfoResp = instanceContainerServiceClient
 				.getQueuePlacementInfo(allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
-		Optional<List<QueuePlacementDescription>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
+		Optional<List<QueuePlacementDescriptionData>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
 		
 		if (!queuePlacementInfoOpt.isPresent()) {
 			return;
 		}
 
-		Map<String, QueuePlacementDescription> collect = queuePlacementInfoOpt.get().stream()
-				.collect(Collectors.toMap(QueuePlacementDescription::getId, Function.identity()));
+		Map<String, QueuePlacementDescriptionData> collect = queuePlacementInfoOpt.get().stream()
+				.collect(Collectors.toMap(QueuePlacementDescriptionData::getId, Function.identity()));
 
 		for (QueuePlacement queuePlacement : allQueuePlacements) {
-			QueuePlacementDescription queuePlacementDescription = collect.get(queuePlacement.getId());
+			QueuePlacementDescriptionData queuePlacementDescription = collect.get(queuePlacement.getId());
 
 			if (queuePlacementDescription.getStatus().equals(QueuePlacementStatus.FULFILLED.name())) {
 				Instance instance = new Instance();
@@ -83,8 +83,8 @@ public class QueuePlacementJob {
 				Dungeon dungeon = new Dungeon();
 				dungeon.setInstance(instance);
 
-				RestResponse<PartyResponse> partyResp = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
-				Optional<PartyResponse> partyOpt = partyResp.get();
+				RestResponse<PartyData> partyResp = partyServiceClient.getParty(queuePlacement.getQueuerUsername());
+				Optional<PartyData> partyOpt = partyResp.get();
 				if (partyOpt.isPresent()) {
 					dungeon.setOwnerPartyId(partyOpt.get().getId());
 				} else {
@@ -98,7 +98,7 @@ public class QueuePlacementJob {
 				queuePlacementService.deleteQueuePlacement(queuePlacement);
 
 				if (partyOpt.isPresent()) {
-					for (PartyMemberResponse member : partyOpt.get().getPartyMembers()) {
+					for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
 						NotificationMessage notificationMessage = new NotificationMessage(
 								member.getDisplayUsername().toLowerCase(), "Dungeon active!");
 

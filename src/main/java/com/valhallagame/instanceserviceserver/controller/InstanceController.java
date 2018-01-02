@@ -176,8 +176,8 @@ public class InstanceController {
 			if (partyOpt.isPresent()) {
 				PartyData party = partyOpt.get();
 				for (PartyMemberData member : party.getPartyMembers()) {
-					NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
-							"Dungeon active!");
+					NotificationMessage notificationMessage = new NotificationMessage(
+							member.getDisplayUsername().toLowerCase(), "Dungeon active!");
 					notificationMessage.addData("dungeon", dungeon);
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
@@ -277,6 +277,7 @@ public class InstanceController {
 			for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
 				NotificationMessage notificationMessage = new NotificationMessage(
 						partyMember.getDisplayUsername().toLowerCase(), "queue placement placed");
+				notificationMessage.addData("queuePlacementId", queuePlacement.getId());
 				notificationMessage.addData("mapName", input.getMap());
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 						RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
@@ -284,6 +285,7 @@ public class InstanceController {
 		} else {
 			NotificationMessage notificationMessage = new NotificationMessage(input.getUsername(),
 					"queue placement placed");
+			notificationMessage.addData("queuePlacementId", queuePlacement.getId());
 			notificationMessage.addData("mapName", input.getMap());
 			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 					RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);

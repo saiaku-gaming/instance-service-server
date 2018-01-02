@@ -7,14 +7,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.valhallagame.common.RestResponse;
-import com.valhallagame.common.rabbitmq.NotificationMessage;
-import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
@@ -26,7 +23,6 @@ import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyMemberData;
 import com.valhallagame.partyserviceclient.model.PartyData;
 
 @Component
@@ -41,8 +37,8 @@ public class QueuePlacementJob {
 	@Autowired
 	private InstanceService instanceService;
 
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
+	// @Autowired
+	// private RabbitTemplate rabbitTemplate;
 
 	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
 	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
@@ -56,9 +52,10 @@ public class QueuePlacementJob {
 		}
 
 		RestResponse<List<QueuePlacementDescriptionData>> queuePlacementInfoResp = instanceContainerServiceClient
-				.getQueuePlacementInfo(allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
+				.getQueuePlacementInfo(
+						allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
 		Optional<List<QueuePlacementDescriptionData>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
-		
+
 		if (!queuePlacementInfoOpt.isPresent()) {
 			return;
 		}
@@ -75,8 +72,8 @@ public class QueuePlacementJob {
 		}
 	}
 
-	private void saveInstanceAndNotify(QueuePlacement queuePlacement, QueuePlacementDescriptionData queuePlacementDescription)
-			throws IOException {
+	private void saveInstanceAndNotify(QueuePlacement queuePlacement,
+			QueuePlacementDescriptionData queuePlacementDescription) throws IOException {
 		Instance instance = new Instance();
 		instance.setId(queuePlacementDescription.getGameSessionId());
 		instance.setAddress(queuePlacementDescription.getAddress());
@@ -103,25 +100,26 @@ public class QueuePlacementJob {
 		dungeonService.saveDungeon(dungeon);
 
 		queuePlacementService.deleteQueuePlacement(queuePlacement);
-
-		if (partyOpt.isPresent()) {
-			for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
-				NotificationMessage notificationMessage = new NotificationMessage(
-						member.getDisplayUsername().toLowerCase(), "Dungeon active!");
-
-				notificationMessage.addData("gameSessionId", instance.getId());
-
-				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
-			}
-		} else {
-			NotificationMessage notificationMessage = new NotificationMessage(
-					queuePlacement.getQueuerUsername(), "Dungeon active!");
-
-			notificationMessage.addData("gameSessionId", instance.getId());
-
-			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-					RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
-		}
+		//
+		// if (partyOpt.isPresent()) {
+		// for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
+		// NotificationMessage notificationMessage = new NotificationMessage(
+		// member.getDisplayUsername().toLowerCase(), "Dungeon active!");
+		//
+		// notificationMessage.addData("dungeon", dungeon);
+		//
+		// rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+		// RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
+		// }
+		// } else {
+		// NotificationMessage notificationMessage = new
+		// NotificationMessage(queuePlacement.getQueuerUsername(),
+		// "Dungeon active!");
+		//
+		// notificationMessage.addData("dungeon", dungeon);
+		//
+		// rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+		// RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
+		// }
 	}
 }

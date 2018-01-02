@@ -45,8 +45,8 @@ import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyMemberData;
 import com.valhallagame.partyserviceclient.model.PartyData;
+import com.valhallagame.partyserviceclient.model.PartyMemberData;
 import com.valhallagame.personserviceclient.PersonServiceClient;
 import com.valhallagame.personserviceclient.model.SessionData;
 
@@ -86,7 +86,8 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-dungeon-connection", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getDungeonConnection(@Valid @RequestBody GetDungeonConnectionParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getDungeonConnection(@Valid @RequestBody GetDungeonConnectionParameter input)
+			throws IOException {
 
 		String version = input.getVersion();
 
@@ -118,7 +119,8 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-relevant-dungeons", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getRelevantDungeons(@Valid @RequestBody GetRelevantDungeonsParameter input) throws IOException {
+	public ResponseEntity<JsonNode> getRelevantDungeons(@Valid @RequestBody GetRelevantDungeonsParameter input)
+			throws IOException {
 
 		String username = input.getUsername();
 		String version = input.getVersion();
@@ -149,7 +151,8 @@ public class InstanceController {
 
 	@RequestMapping(path = "/activate-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> activateInstance(@Valid @RequestBody ActivateInstanceParameter input) throws IOException {
+	public ResponseEntity<JsonNode> activateInstance(@Valid @RequestBody ActivateInstanceParameter input)
+			throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -173,14 +176,18 @@ public class InstanceController {
 			if (partyOpt.isPresent()) {
 				PartyData party = partyOpt.get();
 				for (PartyMemberData member : party.getPartyMembers()) {
+					NotificationMessage notificationMessage = new NotificationMessage(
+							member.getDisplayUsername().toLowerCase(), "Dungeon active!");
+					notificationMessage.addData("dungeon", dungeon);
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-							new NotificationMessage(member.getDisplayUsername().toLowerCase(), "Dungeon active!"));
+							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 				}
 			} else {
+				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
+						"Dungeon active!");
+				notificationMessage.addData("dungeon", dungeon);
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(),
-						new NotificationMessage(dungeon.getOwnerUsername(), "Dungeon active!"));
+						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
 		}
 
@@ -189,7 +196,8 @@ public class InstanceController {
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> updateInstanceState(@Valid @RequestBody UpdateInstanceStateParameter input) {
+	public ResponseEntity<JsonNode> updateInstanceState(@Valid @RequestBody UpdateInstanceStateParameter input)
+			throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -202,6 +210,29 @@ public class InstanceController {
 		switch (state) {
 		case FINISHED:
 			instanceService.deleteInstance(instance);
+			Optional<Dungeon> optDungeon = dungeonService.getDungeonByInstance(instance);
+			if (optDungeon.isPresent()) {
+				Dungeon dungeon = optDungeon.get();
+				if (dungeon.getOwnerPartyId() != null) {
+					RestResponse<PartyData> party = partyServiceClient.getPartyById(dungeon.getId());
+					if (party.get().isPresent()) {
+						for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
+							NotificationMessage notificationMessage = new NotificationMessage(
+									partyMember.getDisplayUsername().toLowerCase(),
+									"dungeon changed state to finished");
+							notificationMessage.addData("dungeon", dungeon);
+							rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+									RabbitMQRouting.Instance.DUNGEON_FINISHED.name(), notificationMessage);
+						}
+					}
+				} else {
+					NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
+							"dungeon changed state to finished");
+					notificationMessage.addData("dungeon", dungeon);
+					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+							RabbitMQRouting.Instance.DUNGEON_FINISHED.name(), notificationMessage);
+				}
+			}
 			break;
 		case STARTING:
 			return JS.message(HttpStatus.BAD_REQUEST, "The state should never be set to STARTING from here!");
@@ -240,12 +271,33 @@ public class InstanceController {
 
 		queuePlacementService.saveQueuePlacement(queuePlacement);
 
+		RestResponse<PartyData> party = partyServiceClient.getParty(input.getUsername());
+
+		if (party.get().isPresent()) {
+			for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
+				NotificationMessage notificationMessage = new NotificationMessage(
+						partyMember.getDisplayUsername().toLowerCase(), "queue placement placed");
+				notificationMessage.addData("queuePlacementId", queuePlacement.getId());
+				notificationMessage.addData("mapName", input.getMap());
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+						RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
+			}
+		} else {
+			NotificationMessage notificationMessage = new NotificationMessage(input.getUsername(),
+					"queue placement placed");
+			notificationMessage.addData("queuePlacementId", queuePlacement.getId());
+			notificationMessage.addData("mapName", input.getMap());
+			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+					RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
+		}
+
 		return JS.message(HttpStatus.OK, "Dungeon started");
 	}
 
 	@RequestMapping(path = "/instance-player-login", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> instancePlayerLogin(@Valid @RequestBody InstancePlayerLoginParameter input) throws IOException {
+	public ResponseEntity<JsonNode> instancePlayerLogin(@Valid @RequestBody InstancePlayerLoginParameter input)
+			throws IOException {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
@@ -316,7 +368,8 @@ public class InstanceController {
 
 	@RequestMapping(path = "/get-all-players-in-same-instance", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(@Valid @RequestBody GetAllPlayersInSameInstanceParameter input) {
+	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(
+			@Valid @RequestBody GetAllPlayersInSameInstanceParameter input) {
 		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
 
 		if (!optInstance.isPresent()) {
@@ -336,8 +389,8 @@ public class InstanceController {
 		Optional<String> sessionIdOpt = playerSessionResp.get();
 		if (sessionIdOpt.isPresent()) {
 			String playerSession = sessionIdOpt.get();
-			SessionAndConnectionData sac = new SessionAndConnectionData(instance.getAddress(),
-					instance.getPort(), playerSession);
+			SessionAndConnectionData sac = new SessionAndConnectionData(instance.getAddress(), instance.getPort(),
+					playerSession);
 			return JS.message(HttpStatus.OK, sac);
 		} else {
 			return JS.message(HttpStatus.NOT_FOUND, "No player session available. Please try again.");

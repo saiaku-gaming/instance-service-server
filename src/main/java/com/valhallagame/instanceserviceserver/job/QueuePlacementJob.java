@@ -108,23 +108,38 @@ public class QueuePlacementJob {
 		if (partyOpt.isPresent()) {
 			for (PartyMemberData member : partyOpt.get().getPartyMembers()) {
 				NotificationMessage notificationMessage = new NotificationMessage(
-						member.getDisplayUsername().toLowerCase(), "Dungeon active!");
+						member.getDisplayUsername().toLowerCase(), "Queue placement fulfilled!");
 
 				notificationMessage.addData("dungeonId", dungeon.getId());
 				notificationMessage.addData("queueId", queuePlacement.getId());
 
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 						RabbitMQRouting.Instance.QUEUE_PLACEMENT_FULFILLED.name(), notificationMessage);
+
+				notificationMessage = new NotificationMessage(member.getDisplayUsername().toLowerCase(),
+						"Dungeon active!");
+
+				notificationMessage.addData("dungeon", dungeon);
+
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
 		} else {
 			NotificationMessage notificationMessage = new NotificationMessage(queuePlacement.getQueuerUsername(),
-					"Dungeon active!");
+					"Queue placement fulfilled!");
 
 			notificationMessage.addData("dungeonId", dungeon.getId());
 			notificationMessage.addData("queueId", queuePlacement.getId());
 
 			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 					RabbitMQRouting.Instance.QUEUE_PLACEMENT_FULFILLED.name(), notificationMessage);
+
+			notificationMessage = new NotificationMessage(queuePlacement.getQueuerUsername(), "Dungeon active!");
+
+			notificationMessage.addData("dungeon", dungeon);
+
+			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+					RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 		}
 	}
 }

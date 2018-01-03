@@ -43,6 +43,10 @@ public class Instance {
 	private List<String> members;
 
 	public int getPlayerCount() {
+		if (members == null) {
+			return 0;
+		}
+
 		return members.size();
 	}
 }

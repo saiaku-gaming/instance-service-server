@@ -52,7 +52,7 @@ public class DungeonService {
 			return true;
 		}
 
-		if (optDungeon.get().getInstance().getState().equals(InstanceState.STARTING.name())) {
+		if (!optDungeon.get().getInstance().getState().equals(InstanceState.FINISHING.name())) {
 			return false;
 		}
 

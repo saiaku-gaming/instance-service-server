@@ -24,7 +24,8 @@ public class DungeonService {
 	@Autowired
 	private QueuePlacementService queuePlacementService;
 
-	private PartyServiceClient partyServiceClient = PartyServiceClient.get();
+	@Autowired
+	private PartyServiceClient partyServiceClient;
 
 	public Dungeon saveDungeon(Dungeon dungeon) {
 		return dungeonRepository.save(dungeon);
@@ -42,8 +43,7 @@ public class DungeonService {
 		RestResponse<PartyData> partyResp = partyServiceClient.getParty(username);
 
 		Optional<PartyData> partyOpt = partyResp.get();
-		if (partyOpt.isPresent()
-				&& !partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username)) {
+		if (partyOpt.isPresent() && !partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username)) {
 			return false;
 		}
 

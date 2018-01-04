@@ -44,8 +44,11 @@ public class QueuePlacementJob {
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
-	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
-	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
+	@Autowired
+	private InstanceContainerServiceClient instanceContainerServiceClient;
+
+	@Autowired
+	private PartyServiceClient partyServiceClient;
 
 	@Scheduled(fixedRate = 1000, initialDelay = 1000)
 	public void execute() throws IOException {

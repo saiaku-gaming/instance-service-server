@@ -143,7 +143,11 @@ public class InstanceController {
 		} else {
 			Optional<Dungeon> optDungeon = dungeonService.getDungeonFromOwnerUsername(username);
 			if (optDungeon.isPresent()) {
-				relevantDungeons.add(optDungeon.get());
+				Dungeon dungeon = optDungeon.get();
+				String state = dungeon.getInstance().getState();
+				if(state.equals(InstanceState.ACTIVE.name()) || state.equals(InstanceState.STARTING.name())){
+					relevantDungeons.add(optDungeon.get());	
+				}
 			}
 		}
 		
@@ -229,38 +233,43 @@ public class InstanceController {
 		switch (state) {
 		case FINISHED:
 			instanceService.deleteInstance(instance);
-			Optional<Dungeon> optDungeon = dungeonService.getDungeonByInstance(instance);
-			if (optDungeon.isPresent()) {
-				Dungeon dungeon = optDungeon.get();
-				if (dungeon.getOwnerPartyId() != null) {
-					RestResponse<PartyData> party = partyServiceClient.getPartyById(dungeon.getId());
-					if (party.get().isPresent()) {
-						for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
-							NotificationMessage notificationMessage = new NotificationMessage(
-									partyMember.getDisplayUsername().toLowerCase(),
-									"dungeon changed state to finished");
-							notificationMessage.addData("dungeon", dungeon);
-							rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-									RabbitMQRouting.Instance.DUNGEON_FINISHED.name(), notificationMessage);
-						}
-					}
-				} else {
-					NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
-							"dungeon changed state to finished");
-					notificationMessage.addData("dungeon", dungeon);
-					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-							RabbitMQRouting.Instance.DUNGEON_FINISHED.name(), notificationMessage);
-				}
-			}
+			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHED, "dungeon changed state to finished");
 			break;
 		case STARTING:
 			return JS.message(HttpStatus.BAD_REQUEST, "The state should never be set to STARTING from here!");
 		case ACTIVE:
 		case FINISHING:
+			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHING, "dungeon changed state to finishing");
 			instance.setState(state.name());
 		}
 
 		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
+	}
+
+	private void notifyAboutInstanceChange(Instance instance, RabbitMQRouting.Instance type, String reason) throws IOException {
+		Optional<Dungeon> optDungeon = dungeonService.getDungeonByInstance(instance);
+		if (optDungeon.isPresent()) {
+			Dungeon dungeon = optDungeon.get();
+			if (dungeon.getOwnerPartyId() != null) {
+				RestResponse<PartyData> party = partyServiceClient.getPartyById(dungeon.getId());
+				if (party.get().isPresent()) {
+					for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
+						NotificationMessage notificationMessage = new NotificationMessage(
+								partyMember.getDisplayUsername().toLowerCase(),
+								reason);
+						notificationMessage.addData("dungeon", dungeon);
+						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+								type.name(), notificationMessage);
+					}
+				}
+			} else {
+				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
+						reason);
+				notificationMessage.addData("dungeon", dungeon);
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+						type.name(), notificationMessage);
+			}
+		}
 	}
 
 	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)

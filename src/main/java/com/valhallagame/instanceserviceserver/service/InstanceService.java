@@ -18,13 +18,14 @@ import com.valhallagame.instanceserviceserver.repository.InstanceRepository;
 
 @Service
 public class InstanceService {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(InstanceService.class);
-	
+
 	@Autowired
 	private InstanceRepository instanceRepository;
 
-	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
+	@Autowired
+	private InstanceContainerServiceClient instanceContainerServiceClient;
 
 	public Instance saveInstance(Instance instance) {
 		return instanceRepository.save(instance);
@@ -43,7 +44,8 @@ public class InstanceService {
 	}
 
 	public Optional<Instance> createInstance(String level, String version, String creatorId) throws IOException {
-		RestResponse<String> gameSessionIdResp = instanceContainerServiceClient.createInstance(level, version, creatorId);
+		RestResponse<String> gameSessionIdResp = instanceContainerServiceClient.createInstance(level, version,
+				creatorId);
 		Optional<String> gameSessionIdOpt = gameSessionIdResp.get();
 		if (gameSessionIdOpt.isPresent()) {
 			String gameSessionId = gameSessionIdOpt.get();

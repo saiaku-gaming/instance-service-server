@@ -59,9 +59,14 @@ public class InstanceController {
 	
 	Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
-	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
-	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
-	private static PersonServiceClient personServiceClient = PersonServiceClient.get();
+	@Autowired
+	private InstanceContainerServiceClient instanceContainerServiceClient;
+
+	@Autowired
+	private PartyServiceClient partyServiceClient;
+
+	@Autowired
+	private PersonServiceClient personServiceClient;
 
 	@Autowired
 	private InstanceService instanceService;
@@ -154,25 +159,27 @@ public class InstanceController {
 				}
 			}
 		}
-		
+
 		List<QueuePlacement> queuePlacement = new ArrayList<>();
 		if (partyOpt.isPresent()) {
 			PartyData partyData = partyOpt.get();
 			partyData.getPartyMembers().forEach(m -> {
 				String memberUsername = m.getDisplayUsername().toLowerCase();
-				Optional<QueuePlacement> placementOpt = queuePlacementService.getQueuePlacementFromQueuer(memberUsername);
-				if(placementOpt.isPresent()) {
+				Optional<QueuePlacement> placementOpt = queuePlacementService
+						.getQueuePlacementFromQueuer(memberUsername);
+				if (placementOpt.isPresent()) {
 					queuePlacement.add(placementOpt.get());
 				}
 			});
 		} else {
 			Optional<QueuePlacement> placementOpt = queuePlacementService.getQueuePlacementFromQueuer(username);
-			if(placementOpt.isPresent()) {
+			if (placementOpt.isPresent()) {
 				queuePlacement.add(placementOpt.get());
 			}
 		}
-		
-		RelevantDungeonsAndPlacement relevantDungeonsAndPlacement = new RelevantDungeonsAndPlacement(relevantDungeons, queuePlacement);
+
+		RelevantDungeonsAndPlacement relevantDungeonsAndPlacement = new RelevantDungeonsAndPlacement(relevantDungeons,
+				queuePlacement);
 		return JS.message(HttpStatus.OK, relevantDungeonsAndPlacement);
 	}
 

@@ -328,6 +328,10 @@ public class InstanceController {
 		}
 		String username = sessionOpt.get().getPerson().getUsername();
 
+		Optional<Instance> otherInstOpt = instanceService.findInstanceByMember(username);
+		if(otherInstOpt.isPresent()) {
+			otherInstOpt.get().getMembers().remove(username);
+		}
 		Instance instance = optInstance.get();
 		instance.getMembers().add(username);
 

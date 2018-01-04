@@ -7,6 +7,8 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -54,6 +56,8 @@ import com.valhallagame.personserviceclient.model.SessionData;
 @Controller
 @RequestMapping(path = "/v1/instance")
 public class InstanceController {
+	
+	Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
 	private static InstanceContainerServiceClient instanceContainerServiceClient = InstanceContainerServiceClient.get();
 	private static PartyServiceClient partyServiceClient = PartyServiceClient.get();
@@ -221,6 +225,7 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> updateInstanceState(@Valid @RequestBody UpdateInstanceStateParameter input)
 			throws IOException {
+		logger.info("Updateing instance state {}", input);
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -229,7 +234,7 @@ public class InstanceController {
 
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
 		Instance instance = optInstance.get();
-
+		logger.info("Setting {} to state {}", instance.getId(), state.name());
 		switch (state) {
 		case FINISHED:
 			instanceService.deleteInstance(instance);

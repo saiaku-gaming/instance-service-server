@@ -330,7 +330,9 @@ public class InstanceController {
 
 		Optional<Instance> otherInstOpt = instanceService.findInstanceByMember(username);
 		if(otherInstOpt.isPresent()) {
-			otherInstOpt.get().getMembers().remove(username);
+			Instance otherInstance = otherInstOpt.get();
+			otherInstance.getMembers().remove(username);
+			instanceService.saveInstance(otherInstance);
 		}
 		Instance instance = optInstance.get();
 		instance.getMembers().add(username);

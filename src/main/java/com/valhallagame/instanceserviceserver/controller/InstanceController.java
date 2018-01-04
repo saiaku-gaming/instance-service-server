@@ -40,6 +40,7 @@ import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.model.QueuePlacement;
+import com.valhallagame.instanceserviceserver.model.RelevantDungeonsAndPlacement;
 import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
@@ -145,8 +146,26 @@ public class InstanceController {
 				relevantDungeons.add(optDungeon.get());
 			}
 		}
-
-		return JS.message(HttpStatus.OK, relevantDungeons);
+		
+		List<QueuePlacement> queuePlacement = new ArrayList<>();
+		if (partyOpt.isPresent()) {
+			PartyData partyData = partyOpt.get();
+			partyData.getPartyMembers().forEach(m -> {
+				String memberUsername = m.getDisplayUsername().toLowerCase();
+				Optional<QueuePlacement> placementOpt = queuePlacementService.getQueuePlacementFromQueuer(memberUsername);
+				if(placementOpt.isPresent()) {
+					queuePlacement.add(placementOpt.get());
+				}
+			});
+		} else {
+			Optional<QueuePlacement> placementOpt = queuePlacementService.getQueuePlacementFromQueuer(username);
+			if(placementOpt.isPresent()) {
+				queuePlacement.add(placementOpt.get());
+			}
+		}
+		
+		RelevantDungeonsAndPlacement relevantDungeonsAndPlacement = new RelevantDungeonsAndPlacement(relevantDungeons, queuePlacement);
+		return JS.message(HttpStatus.OK, relevantDungeonsAndPlacement);
 	}
 
 	@RequestMapping(path = "/activate-instance", method = RequestMethod.POST)

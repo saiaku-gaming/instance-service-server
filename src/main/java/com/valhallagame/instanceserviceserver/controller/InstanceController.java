@@ -25,7 +25,6 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
-import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceclient.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.AddLocalInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.GetAllPlayersInSameInstanceParameter;
@@ -56,7 +55,7 @@ import com.valhallagame.personserviceclient.model.SessionData;
 @Controller
 @RequestMapping(path = "/v1/instance")
 public class InstanceController {
-	
+
 	Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
 	@Autowired
@@ -154,8 +153,8 @@ public class InstanceController {
 			if (optDungeon.isPresent()) {
 				Dungeon dungeon = optDungeon.get();
 				String state = dungeon.getInstance().getState();
-				if(state.equals(InstanceState.ACTIVE.name()) || state.equals(InstanceState.STARTING.name())){
-					relevantDungeons.add(optDungeon.get());	
+				if (state.equals(InstanceState.ACTIVE.name()) || state.equals(InstanceState.STARTING.name())) {
+					relevantDungeons.add(optDungeon.get());
 				}
 			}
 		}
@@ -245,20 +244,23 @@ public class InstanceController {
 		switch (state) {
 		case FINISHED:
 			instanceService.deleteInstance(instance);
-			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHED, "dungeon changed state to finished");
+			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHED,
+					"dungeon changed state to finished");
 			break;
 		case STARTING:
 			return JS.message(HttpStatus.BAD_REQUEST, "The state should never be set to STARTING from here!");
 		case ACTIVE:
 		case FINISHING:
-			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHING, "dungeon changed state to finishing");
+			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHING,
+					"dungeon changed state to finishing");
 			instance.setState(state.name());
 		}
 
 		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
 	}
 
-	private void notifyAboutInstanceChange(Instance instance, RabbitMQRouting.Instance type, String reason) throws IOException {
+	private void notifyAboutInstanceChange(Instance instance, RabbitMQRouting.Instance type, String reason)
+			throws IOException {
 		Optional<Dungeon> optDungeon = dungeonService.getDungeonByInstance(instance);
 		if (optDungeon.isPresent()) {
 			Dungeon dungeon = optDungeon.get();
@@ -267,19 +269,17 @@ public class InstanceController {
 				if (party.get().isPresent()) {
 					for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
 						NotificationMessage notificationMessage = new NotificationMessage(
-								partyMember.getDisplayUsername().toLowerCase(),
-								reason);
+								partyMember.getDisplayUsername().toLowerCase(), reason);
 						notificationMessage.addData("dungeon", dungeon);
-						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-								type.name(), notificationMessage);
+						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
+								notificationMessage);
 					}
 				}
 			} else {
-				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
-						reason);
+				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(), reason);
 				notificationMessage.addData("dungeon", dungeon);
-				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-						type.name(), notificationMessage);
+				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
+						notificationMessage);
 			}
 		}
 	}
@@ -292,24 +292,14 @@ public class InstanceController {
 			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
 		}
 
-		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
-				.createQueuePlacement("DungeonQueue" + input.getVersion(), input.getMap(), input.getVersion(),
-						input.getUsername());
-		Optional<QueuePlacementDescriptionData> createQueuePlacementOpt = createQueuePlacementResponse.get();
-		if (!createQueuePlacementOpt.isPresent()) {
-			return JS.message(createQueuePlacementResponse);
+		Optional<QueuePlacement> queueForInstance = queuePlacementService.queueForInstance(input.getVersion(),
+				input.getMap(), input.getUsername());
+
+		if (!queueForInstance.isPresent()) {
+			return JS.message(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to queue up!");
 		}
 
-		QueuePlacementDescriptionData queuePlacementDescription = createQueuePlacementOpt.get();
-
-		QueuePlacement queuePlacement = new QueuePlacement();
-		queuePlacement.setId(queuePlacementDescription.getId());
-		queuePlacement.setMapName(input.getMap());
-		queuePlacement.setQueuerUsername(input.getUsername());
-		queuePlacement.setStatus(queuePlacementDescription.getStatus());
-		queuePlacement.setVersion(input.getVersion());
-
-		queuePlacementService.saveQueuePlacement(queuePlacement);
+		QueuePlacement queuePlacement = queueForInstance.get();
 
 		RestResponse<PartyData> party = partyServiceClient.getParty(input.getUsername());
 
@@ -350,7 +340,7 @@ public class InstanceController {
 		String username = sessionOpt.get().getPerson().getUsername();
 
 		Optional<Instance> otherInstOpt = instanceService.findInstanceByMember(username);
-		if(otherInstOpt.isPresent()) {
+		if (otherInstOpt.isPresent()) {
 			Instance otherInstance = otherInstOpt.get();
 			otherInstance.getMembers().remove(username);
 			instanceService.saveInstance(otherInstance);

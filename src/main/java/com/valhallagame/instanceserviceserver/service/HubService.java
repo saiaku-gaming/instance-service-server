@@ -1,13 +1,15 @@
 package com.valhallagame.instanceserviceserver.service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.valhallagame.instanceserviceserver.model.Hub;
-import com.valhallagame.instanceserviceserver.model.Instance;
+import com.valhallagame.instanceserviceserver.model.QueuePlacement;
 import com.valhallagame.instanceserviceserver.repository.HubRepository;
 
 @Service
@@ -20,7 +22,7 @@ public class HubService {
 	private HubRepository hubRepository;
 
 	@Autowired
-	private InstanceService instanceService;
+	private QueuePlacementService queuePlacementService;
 
 	public void saveHub(Hub hub) {
 		hubRepository.save(hub);
@@ -36,12 +38,11 @@ public class HubService {
 		// Give it the old hub if we reached SOFT_MAX,
 		// Give it the new hub if we could not find any old ones.
 		if (!hubOpt.isPresent() || (hubOpt.get().getInstance().getPlayerCount() > SOFT_MAX)) {
-			Optional<Instance> optInstance = instanceService.createInstance(HUB_MAP, version, username);
-			if (optInstance.isPresent()) {
-				Instance instance = optInstance.get();
-				Hub hub = new Hub();
-				hub.setInstance(instance);
-				hubRepository.save(hub);
+			List<QueuePlacement> queuePlacementsFromMapName = queuePlacementService
+					.getQueuePlacementsFromMapName(HUB_MAP).stream().filter(qp -> qp.getVersion().equals(version))
+					.collect(Collectors.toList());
+			if (queuePlacementsFromMapName.isEmpty()) {
+				queuePlacementService.queueForInstance(version, HUB_MAP, username);
 			}
 		}
 

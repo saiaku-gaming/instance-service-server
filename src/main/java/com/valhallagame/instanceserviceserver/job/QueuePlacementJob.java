@@ -101,6 +101,8 @@ public class QueuePlacementJob {
 			hub.setInstance(instance);
 			hubService.saveHub(hub);
 
+			queuePlacementService.deleteQueuePlacement(queuePlacement);
+
 			return;
 		}
 

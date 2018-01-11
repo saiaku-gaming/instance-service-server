@@ -14,7 +14,7 @@ import com.valhallagame.instanceserviceserver.repository.HubRepository;
 
 @Service
 public class HubService {
-	private static final String HUB_MAP = "ValhallaMap";
+	public static final String HUB_MAP = "ValhallaMap";
 
 	private static final int SOFT_MAX = 10;
 
@@ -24,8 +24,8 @@ public class HubService {
 	@Autowired
 	private QueuePlacementService queuePlacementService;
 
-	public void saveHub(Hub hub) {
-		hubRepository.save(hub);
+	public Hub saveHub(Hub hub) {
+		return hubRepository.save(hub);
 	}
 
 	public void deleteHub(Hub local) {

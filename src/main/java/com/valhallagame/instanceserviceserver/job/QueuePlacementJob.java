@@ -18,11 +18,13 @@ import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
+import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.model.QueuePlacement;
 import com.valhallagame.instanceserviceserver.model.QueuePlacementStatus;
 import com.valhallagame.instanceserviceserver.service.DungeonService;
+import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
 import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
@@ -37,6 +39,9 @@ public class QueuePlacementJob {
 
 	@Autowired
 	private DungeonService dungeonService;
+
+	@Autowired
+	private HubService hubService;
 
 	@Autowired
 	private InstanceService instanceService;
@@ -90,6 +95,14 @@ public class QueuePlacementJob {
 		instance.setVersion(queuePlacement.getVersion());
 
 		instance = instanceService.saveInstance(instance);
+
+		if (HubService.HUB_MAP.equals(instance.getLevel())) {
+			Hub hub = new Hub();
+			hub.setInstance(instance);
+			hubService.saveHub(hub);
+
+			return;
+		}
 
 		Dungeon dungeon = new Dungeon();
 		dungeon.setInstance(instance);

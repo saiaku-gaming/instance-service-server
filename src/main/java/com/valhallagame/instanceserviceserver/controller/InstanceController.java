@@ -56,6 +56,8 @@ import com.valhallagame.personserviceclient.model.SessionData;
 @RequestMapping(path = "/v1/instance")
 public class InstanceController {
 
+	private static final String DUNGEON = "dungeon";
+
 	Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
 	@Autowired
@@ -211,14 +213,14 @@ public class InstanceController {
 				for (PartyMemberData member : party.getPartyMembers()) {
 					NotificationMessage notificationMessage = new NotificationMessage(
 							member.getDisplayUsername().toLowerCase(), "Dungeon active!");
-					notificationMessage.addData("dungeon", dungeon);
+					notificationMessage.addData(DUNGEON, dungeon);
 					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 				}
 			} else {
 				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
 						"Dungeon active!");
-				notificationMessage.addData("dungeon", dungeon);
+				notificationMessage.addData(DUNGEON, dungeon);
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
@@ -240,7 +242,9 @@ public class InstanceController {
 
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
 		Instance instance = optInstance.get();
-		logger.info("Setting {} to state {}", instance.getId(), state.name());
+		if(logger.isInfoEnabled()) {
+			logger.info("Setting {} to state {}", instance.getId(), state.name());
+		}
 		switch (state) {
 		case FINISHED:
 			instanceService.deleteInstance(instance);
@@ -266,18 +270,19 @@ public class InstanceController {
 			Dungeon dungeon = optDungeon.get();
 			if (dungeon.getOwnerPartyId() != null) {
 				RestResponse<PartyData> party = partyServiceClient.getPartyById(dungeon.getId());
-				if (party.get().isPresent()) {
-					for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
+				Optional<PartyData> partyOpt = party.get();
+				if (partyOpt.isPresent()) {
+					for (PartyMemberData partyMember : partyOpt.get().getPartyMembers()) {
 						NotificationMessage notificationMessage = new NotificationMessage(
 								partyMember.getDisplayUsername().toLowerCase(), reason);
-						notificationMessage.addData("dungeon", dungeon);
+						notificationMessage.addData(DUNGEON, dungeon);
 						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
 								notificationMessage);
 					}
 				}
 			} else {
 				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(), reason);
-				notificationMessage.addData("dungeon", dungeon);
+				notificationMessage.addData(DUNGEON, dungeon);
 				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
 						notificationMessage);
 			}
@@ -303,8 +308,9 @@ public class InstanceController {
 
 		RestResponse<PartyData> party = partyServiceClient.getParty(input.getUsername());
 
-		if (party.get().isPresent()) {
-			for (PartyMemberData partyMember : party.get().get().getPartyMembers()) {
+		Optional<PartyData> partyOpt = party.get();
+		if (partyOpt.isPresent()) {
+			for (PartyMemberData partyMember : partyOpt.get().getPartyMembers()) {
 				NotificationMessage notificationMessage = new NotificationMessage(
 						partyMember.getDisplayUsername().toLowerCase(), "queue placement placed");
 				notificationMessage.addData("queuePlacementId", queuePlacement.getId());

@@ -61,4 +61,16 @@ public class QueuePlacementService {
 
 		return Optional.ofNullable(saveQueuePlacement(queuePlacement));
 	}
+
+	/**
+	 * Removes queue wrong version so that a updated user never tries to connect to
+	 * an old server.
+	 */
+	public void removeOldQueues(String version, String username) {
+		queuePlacementRepository.findQueuePlacementByQueuerUsername(username).ifPresent(q -> {
+			if (!q.getVersion().equals(version)) {
+				queuePlacementRepository.delete(q);
+			}
+		});
+	}
 }

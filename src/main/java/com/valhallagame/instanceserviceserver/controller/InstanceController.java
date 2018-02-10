@@ -87,6 +87,9 @@ public class InstanceController {
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> getHub(@Valid @RequestBody GetHubParameter input) throws IOException {
+		
+		queuePlacementService.removeOldQueues(input.getVersion(), input.getUsername());
+		
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");

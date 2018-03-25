@@ -92,7 +92,13 @@ public class InstanceController {
 		
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
+			Optional<QueuePlacement> queuePlacementOpt = queuePlacementService.getQueuePlacementFromQueuer(input.getUsername());
+			if(queuePlacementOpt.isPresent()) {
+				QueuePlacement queuePlacement = queuePlacementOpt.get();
+				return JS.message(HttpStatus.NOT_FOUND, "You are queued at %s to instance %s. Please try again", queuePlacement.getTimestamp(), queuePlacement.getId());
+			} else {
+				return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
+			}
 		}
 
 		return getSession(input.getUsername(), optHub.get().getInstance());

@@ -1,5 +1,8 @@
 package com.valhallagame.instanceserviceserver.model;
 
+import java.time.Instant;
+
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -30,4 +33,8 @@ public class QueuePlacement {
 
 	@Column(name = "version")
 	private String version;
+	
+	@Column(name = "ts")
+	@Basic
+	private Instant timestamp;
 }

@@ -1,6 +1,7 @@
 package com.valhallagame.instanceserviceserver.service;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,6 +59,7 @@ public class QueuePlacementService {
 		queuePlacement.setQueuerUsername(username);
 		queuePlacement.setStatus(queuePlacementDescription.getStatus());
 		queuePlacement.setVersion(version);
+		queuePlacement.setTimestamp(Instant.now());
 
 		return Optional.ofNullable(saveQueuePlacement(queuePlacement));
 	}

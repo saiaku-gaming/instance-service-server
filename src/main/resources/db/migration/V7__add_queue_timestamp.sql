@@ -1,0 +1,1 @@
+ALTER TABLE queue_placement ADD COLUMN ts timestamp NOT NULL DEFAULT NOW();

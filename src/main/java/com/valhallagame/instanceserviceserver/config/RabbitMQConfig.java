@@ -1,6 +1,9 @@
 package com.valhallagame.instanceserviceserver.config;
 
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +22,21 @@ public class RabbitMQConfig {
 	@Bean
 	public Jackson2JsonMessageConverter jacksonConverter() {
 		return new Jackson2JsonMessageConverter();
+	}
+
+	@Bean
+	public DirectExchange partyExchange() {
+		return new DirectExchange(RabbitMQRouting.Exchange.PARTY.name());
+	}
+
+	@Bean
+	public Queue partyCreatedQueue() {
+		return new Queue("partyCreatedQueue");
+	}
+
+	@Bean
+	public Binding bindingPersonOffline(DirectExchange partyExchange, Queue partyCreatedQueue) {
+		return BindingBuilder.bind(partyCreatedQueue).to(partyExchange).with(RabbitMQRouting.Party.CREATED);
 	}
 
 	@Bean

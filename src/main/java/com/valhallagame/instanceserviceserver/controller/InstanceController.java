@@ -433,7 +433,7 @@ public class InstanceController {
 		return JS.message(HttpStatus.OK, members);
 	}
 	
-	@RequestMapping(path = "/get-feets", method = RequestMethod.GET)
+	@RequestMapping(path = "/get-fleets", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<JsonNode> getFeats() throws IOException {
 		return JS.message(instanceContainerServiceClient.getFleets());

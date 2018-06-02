@@ -432,6 +432,12 @@ public class InstanceController {
 		members.remove(input.getUsername());
 		return JS.message(HttpStatus.OK, members);
 	}
+	
+	@RequestMapping(path = "/get-feets", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity<JsonNode> getFeats() throws IOException {
+		return JS.message(instanceContainerServiceClient.getFleets());
+	}
 
 	private ResponseEntity<JsonNode> getSession(String username, Instance instance) throws IOException {
 

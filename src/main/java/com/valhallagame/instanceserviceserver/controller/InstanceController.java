@@ -25,6 +25,7 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
+import com.valhallagame.instancecontainerserviceclient.model.FleetData;
 import com.valhallagame.instanceserviceclient.message.ActivateInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.AddLocalInstanceParameter;
 import com.valhallagame.instanceserviceclient.message.GetAllPlayersInSameInstanceParameter;
@@ -436,7 +437,12 @@ public class InstanceController {
 	@RequestMapping(path = "/get-fleets", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<JsonNode> getFeats() throws IOException {
-		return JS.message(instanceContainerServiceClient.getFleets());
+		RestResponse<List<FleetData>> fleets = instanceContainerServiceClient.getFleets();
+		if(fleets.isOk()) {
+			return JS.message(HttpStatus.OK, fleets.get().get());
+		}
+		
+		return JS.message(fleets);
 	}
 
 	private ResponseEntity<JsonNode> getSession(String username, Instance instance) throws IOException {

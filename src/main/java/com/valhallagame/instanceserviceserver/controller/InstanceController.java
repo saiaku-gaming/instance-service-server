@@ -1,12 +1,24 @@
 package com.valhallagame.instanceserviceserver.controller;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import javax.validation.Valid;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.valhallagame.common.JS;
+import com.valhallagame.common.RestResponse;
+import com.valhallagame.common.rabbitmq.NotificationMessage;
+import com.valhallagame.common.rabbitmq.RabbitMQRouting;
+import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
+import com.valhallagame.instancecontainerserviceclient.model.FleetData;
+import com.valhallagame.instanceserviceclient.message.*;
+import com.valhallagame.instanceserviceclient.model.SessionAndConnectionData;
+import com.valhallagame.instanceserviceserver.model.*;
+import com.valhallagame.instanceserviceserver.service.DungeonService;
+import com.valhallagame.instanceserviceserver.service.HubService;
+import com.valhallagame.instanceserviceserver.service.InstanceService;
+import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
+import com.valhallagame.partyserviceclient.PartyServiceClient;
+import com.valhallagame.partyserviceclient.model.PartyData;
+import com.valhallagame.partyserviceclient.model.PartyMemberData;
+import com.valhallagame.personserviceclient.PersonServiceClient;
+import com.valhallagame.personserviceclient.model.SessionData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -19,39 +31,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.valhallagame.common.JS;
-import com.valhallagame.common.RestResponse;
-import com.valhallagame.common.rabbitmq.NotificationMessage;
-import com.valhallagame.common.rabbitmq.RabbitMQRouting;
-import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
-import com.valhallagame.instancecontainerserviceclient.model.FleetData;
-import com.valhallagame.instanceserviceclient.message.ActivateInstanceParameter;
-import com.valhallagame.instanceserviceclient.message.AddLocalInstanceParameter;
-import com.valhallagame.instanceserviceclient.message.GetAllPlayersInSameInstanceParameter;
-import com.valhallagame.instanceserviceclient.message.GetDungeonConnectionParameter;
-import com.valhallagame.instanceserviceclient.message.GetHubParameter;
-import com.valhallagame.instanceserviceclient.message.GetRelevantDungeonsParameter;
-import com.valhallagame.instanceserviceclient.message.InstancePlayerLoginParameter;
-import com.valhallagame.instanceserviceclient.message.InstancePlayerLogoutParameter;
-import com.valhallagame.instanceserviceclient.message.StartDungeonParameter;
-import com.valhallagame.instanceserviceclient.message.UpdateInstanceStateParameter;
-import com.valhallagame.instanceserviceclient.model.SessionAndConnectionData;
-import com.valhallagame.instanceserviceserver.model.Dungeon;
-import com.valhallagame.instanceserviceserver.model.Hub;
-import com.valhallagame.instanceserviceserver.model.Instance;
-import com.valhallagame.instanceserviceserver.model.InstanceState;
-import com.valhallagame.instanceserviceserver.model.QueuePlacement;
-import com.valhallagame.instanceserviceserver.model.RelevantDungeonsAndPlacement;
-import com.valhallagame.instanceserviceserver.service.DungeonService;
-import com.valhallagame.instanceserviceserver.service.HubService;
-import com.valhallagame.instanceserviceserver.service.InstanceService;
-import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
-import com.valhallagame.partyserviceclient.PartyServiceClient;
-import com.valhallagame.partyserviceclient.model.PartyData;
-import com.valhallagame.partyserviceclient.model.PartyMemberData;
-import com.valhallagame.personserviceclient.PersonServiceClient;
-import com.valhallagame.personserviceclient.model.SessionData;
+import javax.validation.Valid;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping(path = "/v1/instance")
@@ -59,7 +43,7 @@ public class InstanceController {
 
 	private static final String DUNGEON = "dungeon";
 
-	Logger logger = LoggerFactory.getLogger(InstanceController.class);
+	private Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
 	@Autowired
 	private InstanceContainerServiceClient instanceContainerServiceClient;
@@ -405,16 +389,8 @@ public class InstanceController {
 	@RequestMapping(path = "/add-local-instance", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> addLocalInstance(@Valid @RequestBody AddLocalInstanceParameter input) {
-		Instance localInstance = new Instance();
-		localInstance.setId(input.getGameSessionId());
-		localInstance.setAddress(input.getAddress());
-		localInstance.setPort(input.getPort());
-		localInstance.setLevel(input.getMapName());
-		localInstance.setState(input.getState());
-		localInstance.setVersion(input.getVersion());
-
-		instanceService.saveInstance(localInstance);
-
+		instanceService.createLocalInstance(input.getGameSessionId(), input.getAddress(), input.getPort(),
+				input.getMapName(), input.getState(), input.getVersion());
 		return JS.message(HttpStatus.OK, "Local instance added");
 	}
 

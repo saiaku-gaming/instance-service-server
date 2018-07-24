@@ -1,25 +1,31 @@
 package com.valhallagame.instanceserviceserver.service;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instanceserviceserver.model.Instance;
 import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.repository.InstanceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 @Service
 public class InstanceService {
 
 	private static final Logger logger = LoggerFactory.getLogger(InstanceService.class);
+
+	private static ConcurrentMap<String, Instant> developmentInstances = new ConcurrentHashMap<>();
 
 	@Autowired
 	private InstanceRepository instanceRepository;
@@ -32,10 +38,12 @@ public class InstanceService {
 	}
 
 	public void deleteInstance(Instance local) {
+		developmentInstances.remove(local.getId());
 		instanceRepository.delete(local);
 	}
 
-	public void deleteInstance(String instanceId) {
+	private void deleteInstance(String instanceId) {
+		developmentInstances.remove(instanceId);
 		instanceRepository.delete(instanceId);
 	}
 
@@ -84,6 +92,28 @@ public class InstanceService {
 
 		for (String instanceId : allInstancesIds) {
 			deleteInstance(instanceId);
+		}
+	}
+
+	public void createLocalInstance(String gameSessionId, String address, int port, String level, String state, String version) {
+		Instance localInstance = new Instance();
+		localInstance.setId(gameSessionId);
+		localInstance.setAddress(address);
+		localInstance.setPort(port);
+		localInstance.setLevel(level);
+		localInstance.setState(state);
+		localInstance.setVersion(version);
+
+		saveInstance(localInstance);
+
+		developmentInstances.put(gameSessionId, Instant.now());
+	}
+
+	public void removeOldDevelopmentInstances() {
+		for(Map.Entry<String, Instant> entry : developmentInstances.entrySet()) {
+			if(entry.getValue().plus(1, ChronoUnit.HOURS).isBefore(Instant.now())) {
+				deleteInstance(entry.getKey());
+			}
 		}
 	}
 }

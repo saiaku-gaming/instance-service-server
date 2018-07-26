@@ -42,21 +42,26 @@ public class DungeonConsumer {
 	 */
 	@RabbitListener(queues = "#{partyInviteAcceptedQueue.name}")
 	public void receivePartyInviteAccepted(NotificationMessage message) {
+        logger.info("Party invite recorded {}", message);
+
 		Integer partyId = (Integer) message.getData().get("partyId");
 		String username = (String) message.getData().get("newUsername");
 
 		// newUsername is the player that got the invite, we only want to send
 		// new dungeon data to that user.
 		if(!message.getUsername().equals(username)){
+            logger.info("Not interested in this person {}", message);
 			return;
 		}
 
 		if(partyId == null){
+            logger.error("Could not find partyId? Strange {}", message);
 			return;
 		}
 
 		List<Dungeon> dungeons = dungeonService.findActiveDungeonsByPartyId(partyId);
 		if(dungeons.isEmpty()){
+            logger.info("This party has no dungeon and therefor nothing to react to! {}", message);
 			return;
 		}
 

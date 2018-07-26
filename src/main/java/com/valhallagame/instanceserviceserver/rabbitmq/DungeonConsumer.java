@@ -33,6 +33,15 @@ public class DungeonConsumer {
 			dungeon.setOwnerPartyId((Integer) message.getData().get("partyId"));
 			dungeon.setOwnerUsername(null);
 			dungeonService.saveDungeon(dungeon);
+
+            String secondPartyMember = (String) message.getData().get("secondPartyMember");
+            if (secondPartyMember != null) {
+                logger.info("Sending new partymember {} a dungeon {}", secondPartyMember, dungeon);
+                NotificationMessage notificationMessage = new NotificationMessage(secondPartyMember, "Member joined newly created party with active dungeon!");
+                notificationMessage.addData("dungeon", dungeon);
+                rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+                        RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
+            }
 		}
 	}
 

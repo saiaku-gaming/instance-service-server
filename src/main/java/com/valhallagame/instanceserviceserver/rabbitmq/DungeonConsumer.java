@@ -1,9 +1,9 @@
 package com.valhallagame.instanceserviceserver.rabbitmq;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
+import com.valhallagame.instanceserviceserver.model.Dungeon;
+import com.valhallagame.instanceserviceserver.service.DungeonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -11,9 +11,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.valhallagame.common.rabbitmq.NotificationMessage;
-import com.valhallagame.instanceserviceserver.model.Dungeon;
-import com.valhallagame.instanceserviceserver.service.DungeonService;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class DungeonConsumer {
@@ -66,10 +65,8 @@ public class DungeonConsumer {
 
 		logger.info("Sending new partymember {} a dungeon {}", username, dungeon);
 
-		NotificationMessage notificationMessage = new NotificationMessage(username, "Queue placement fulfilled!");
+		NotificationMessage notificationMessage = new NotificationMessage(username, "Member joined party with active dungeon!");
 		notificationMessage.addData("dungeon", dungeon);
-		notificationMessage = new NotificationMessage(username,	"Member joined party with active dungeon!");
-
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 

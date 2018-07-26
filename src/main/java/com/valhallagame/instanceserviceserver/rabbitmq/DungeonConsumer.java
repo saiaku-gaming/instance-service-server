@@ -52,7 +52,7 @@ public class DungeonConsumer {
 			return;
 		}
 
-		if(partyId == null || username == null){
+		if(partyId == null){
 			return;
 		}
 

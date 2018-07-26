@@ -98,7 +98,7 @@ public class InstanceController {
 
 		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
 		if (!instanceOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance found.");
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from %s", input.toString());
 		}
 		Instance instance = instanceOpt.get();
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonByInstance(instance);

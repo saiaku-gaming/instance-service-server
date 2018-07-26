@@ -32,8 +32,6 @@ public class DungeonConsumer {
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonFromOwnerUsername(message.getUsername());
 		if (dungeonOpt.isPresent()) {
 			Dungeon dungeon = dungeonOpt.get();
-            List<String> test = dungeon.getInstance().getMembers();
-            logger.info("does this work? {}", test);
             dungeon.setOwnerPartyId((Integer) message.getData().get("partyId"));
 			dungeon.setOwnerUsername(null);
 			dungeonService.saveDungeon(dungeon);
@@ -54,6 +52,7 @@ public class DungeonConsumer {
 	 * If there is several dungeons it will only get the latest created.
 	 */
 	@RabbitListener(queues = "#{partyInviteAcceptedQueue.name}")
+    @Transactional
 	public void receivePartyInviteAccepted(NotificationMessage message) {
         logger.info("Party invite recorded {}", message);
 

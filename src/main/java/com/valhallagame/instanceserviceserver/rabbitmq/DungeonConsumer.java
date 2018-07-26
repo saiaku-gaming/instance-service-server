@@ -30,7 +30,9 @@ public class DungeonConsumer {
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonFromOwnerUsername(message.getUsername());
 		if (dungeonOpt.isPresent()) {
 			Dungeon dungeon = dungeonOpt.get();
-			dungeon.setOwnerPartyId((Integer) message.getData().get("partyId"));
+            List<String> test = dungeon.getInstance().getMembers();
+            logger.info("does this work? {}", test);
+            dungeon.setOwnerPartyId((Integer) message.getData().get("partyId"));
 			dungeon.setOwnerUsername(null);
 			dungeonService.saveDungeon(dungeon);
             logger.info("Received party created and a dungeon was present {}", message);

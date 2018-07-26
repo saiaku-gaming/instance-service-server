@@ -11,6 +11,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,7 @@ public class DungeonConsumer {
 	private RabbitTemplate rabbitTemplate;
 
 	@RabbitListener(queues = "#{partyCreatedQueue.name}")
+    @Transactional
 	public void receivePartyCreated(NotificationMessage message) {
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonFromOwnerUsername(message.getUsername());
 		if (dungeonOpt.isPresent()) {

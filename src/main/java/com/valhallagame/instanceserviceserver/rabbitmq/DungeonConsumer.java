@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,8 @@ import com.valhallagame.instanceserviceserver.service.DungeonService;
 
 @Component
 public class DungeonConsumer {
+
+	private static final Logger logger = LoggerFactory.getLogger(DungeonConsumer.class);
 
 	@Autowired
 	private DungeonService dungeonService;
@@ -60,8 +64,9 @@ public class DungeonConsumer {
 		dungeons.sort((a, b) -> b.getId().compareTo(a.getId()));
 		Dungeon dungeon = dungeons.get(0);
 
+		logger.info("Sending new partymember {} a dungeon {}", username, dungeon);
+
 		NotificationMessage notificationMessage = new NotificationMessage(username, "Queue placement fulfilled!");
-		notificationMessage.addData("dungeonId", dungeon.getId());
 		notificationMessage.addData("dungeon", dungeon);
 		notificationMessage = new NotificationMessage(username,	"Member joined party with active dungeon!");
 

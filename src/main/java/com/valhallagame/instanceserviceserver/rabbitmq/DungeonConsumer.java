@@ -33,7 +33,7 @@ public class DungeonConsumer {
 			dungeon.setOwnerPartyId((Integer) message.getData().get("partyId"));
 			dungeon.setOwnerUsername(null);
 			dungeonService.saveDungeon(dungeon);
-
+            logger.info("Received party created and a dungeon was present {}", message);
             String secondPartyMember = (String) message.getData().get("secondPartyMember");
             if (secondPartyMember != null && dungeon.getInstance().getState().equals("ACTIVE")) {
                 logger.info("Sending new partymember {} a dungeon {}", secondPartyMember, dungeon);

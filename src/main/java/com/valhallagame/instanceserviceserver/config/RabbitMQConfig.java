@@ -34,9 +34,20 @@ public class RabbitMQConfig {
 		return new Queue("partyCreatedQueue");
 	}
 
+
 	@Bean
-	public Binding bindingPersonOffline(DirectExchange partyExchange, Queue partyCreatedQueue) {
+	public Queue partyInviteAcceptedQueue() {
+		return new Queue("partyInviteAcceptedQueue");
+	}
+
+	@Bean
+	public Binding bindingPartyCreated(DirectExchange partyExchange, Queue partyCreatedQueue) {
 		return BindingBuilder.bind(partyCreatedQueue).to(partyExchange).with(RabbitMQRouting.Party.CREATED);
+	}
+
+	@Bean
+	public Binding bindingPartyInviteAccepted(DirectExchange partyExchange, Queue partyInviteAcceptedQueue) {
+		return BindingBuilder.bind(partyInviteAcceptedQueue).to(partyExchange).with(RabbitMQRouting.Party.ACCEPT_INVITE);
 	}
 
 	@Bean

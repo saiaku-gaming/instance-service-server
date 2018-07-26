@@ -59,6 +59,10 @@ public class DungeonService {
 		return !queuePlacementService.getQueuePlacementFromQueuer(username).isPresent();
 	}
 
+	public List<Dungeon> findActiveDungeonsByPartyId(int partyId) {
+		return dungeonRepository.findActiveDungeonsByPartyId(partyId);
+	}
+
 	public List<Dungeon> getRelevantDungeonsFromParty(PartyData party, String version) {
 		return dungeonRepository.findRelevantDungeonsByPartyId(party.getId(), version);
 	}

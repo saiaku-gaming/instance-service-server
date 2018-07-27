@@ -239,7 +239,7 @@ public class InstanceController {
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
 		Instance instance = optInstance.get();
 		if(logger.isInfoEnabled()) {
-			logger.info("Setting {} to state {}", instance.getId(), state.name());
+            logger.info("Setting instance {} to state {}", instance.getId(), state.name());
 		}
 		switch (state) {
 		case FINISHED:

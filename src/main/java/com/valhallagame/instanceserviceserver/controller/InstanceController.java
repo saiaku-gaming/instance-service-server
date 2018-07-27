@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -225,9 +226,10 @@ public class InstanceController {
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
 	@ResponseBody
+    @Transactional
 	public ResponseEntity<JsonNode> updateInstanceState(@Valid @RequestBody UpdateInstanceStateParameter input)
 			throws IOException {
-		logger.info("Updateing instance state {}", input);
+        logger.info("Updating instance state {}", input);
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -241,9 +243,9 @@ public class InstanceController {
 		}
 		switch (state) {
 		case FINISHED:
-			instanceService.deleteInstance(instance);
 			notifyAboutInstanceChange(instance, RabbitMQRouting.Instance.DUNGEON_FINISHED,
 					"dungeon changed state to finished");
+            instanceService.deleteInstance(instance);
 			break;
 		case STARTING:
 			return JS.message(HttpStatus.BAD_REQUEST, "The state should never be set to STARTING from here!");

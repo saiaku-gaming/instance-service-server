@@ -1,12 +1,5 @@
 package com.valhallagame.instanceserviceserver.service;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Instance;
@@ -14,6 +7,12 @@ import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.repository.DungeonRepository;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.PartyData;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DungeonService {
@@ -29,10 +28,6 @@ public class DungeonService {
 
 	public Dungeon saveDungeon(Dungeon dungeon) {
 		return dungeonRepository.save(dungeon);
-	}
-
-	public void deleteDungeon(Dungeon dungeon) {
-		dungeonRepository.delete(dungeon);
 	}
 
 	public Optional<Dungeon> getDungeonByInstance(Instance instance) {

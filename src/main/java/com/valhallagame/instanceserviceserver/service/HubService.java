@@ -1,16 +1,15 @@
 package com.valhallagame.instanceserviceserver.service;
 
+import com.valhallagame.instanceserviceserver.model.Hub;
+import com.valhallagame.instanceserviceserver.model.QueuePlacement;
+import com.valhallagame.instanceserviceserver.repository.HubRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.valhallagame.instanceserviceserver.model.Hub;
-import com.valhallagame.instanceserviceserver.model.QueuePlacement;
-import com.valhallagame.instanceserviceserver.repository.HubRepository;
 
 @Service
 public class HubService {
@@ -26,10 +25,6 @@ public class HubService {
 
 	public Hub saveHub(Hub hub) {
 		return hubRepository.save(hub);
-	}
-
-	public void deleteHub(Hub local) {
-		hubRepository.delete(local);
 	}
 
 	public Optional<Hub> getHubWithLeastAmountOfPlayers(String version, String username) throws IOException {

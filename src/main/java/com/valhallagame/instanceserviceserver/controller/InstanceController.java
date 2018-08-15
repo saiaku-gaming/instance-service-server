@@ -220,7 +220,7 @@ public class InstanceController {
 						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
 		}
-
+		logger.info("Activated instance with id: %s, %s", input.getGameSessionId(), instance.toString());
 		return JS.message(HttpStatus.OK, "Activated instance with id: %s", input.getGameSessionId());
 	}
 
@@ -255,7 +255,7 @@ public class InstanceController {
 					"dungeon changed state to finishing");
 			instance.setState(state.name());
 		}
-
+		logger.info("Updated state on instance %s ", input.getGameSessionId(), instance.toString());
 		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
 	}
 
@@ -357,7 +357,7 @@ public class InstanceController {
 
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.PERSON_LOGIN.name(), notificationMessage);
-
+		logger.info("Added player %s to instance %s ", username, instance.getId());
 		return JS.message(HttpStatus.OK, "Player added to instance");
 	}
 
@@ -378,7 +378,7 @@ public class InstanceController {
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.PERSON_LOGOUT.name(),
 				new NotificationMessage(input.getUsername(), "Person logged out of an instance"));
-
+		logger.info("Removed player %s from instance %s ", input.getUsername(), instance.getId());
 		return JS.message(HttpStatus.OK, "Player removed from instance");
 	}
 

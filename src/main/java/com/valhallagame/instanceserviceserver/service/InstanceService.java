@@ -3,7 +3,6 @@ package com.valhallagame.instanceserviceserver.service;
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instanceserviceserver.model.Instance;
-import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.repository.InstanceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,97 +22,80 @@ import java.util.stream.Collectors;
 @Service
 public class InstanceService {
 
-	private static final Logger logger = LoggerFactory.getLogger(InstanceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(InstanceService.class);
 
-	private static ConcurrentMap<String, Instant> developmentInstances = new ConcurrentHashMap<>();
+    private static ConcurrentMap<String, Instant> developmentInstances = new ConcurrentHashMap<>();
 
-	@Autowired
-	private InstanceRepository instanceRepository;
+    @Autowired
+    private InstanceRepository instanceRepository;
 
-	@Autowired
-	private InstanceContainerServiceClient instanceContainerServiceClient;
+    @Autowired
+    private InstanceContainerServiceClient instanceContainerServiceClient;
 
-	public Instance saveInstance(Instance instance) {
-		return instanceRepository.save(instance);
-	}
+    public Instance saveInstance(Instance instance) {
+        return instanceRepository.save(instance);
+    }
 
-	public void deleteInstance(Instance local) {
-		developmentInstances.remove(local.getId());
-		instanceRepository.delete(local);
-	}
+    public void deleteInstance(Instance local) {
+        logger.info("Deleting instance %s", local.getId());
+        developmentInstances.remove(local.getId());
+        instanceRepository.delete(local);
+    }
 
-	private void deleteInstance(String instanceId) {
-		developmentInstances.remove(instanceId);
-		instanceRepository.delete(instanceId);
-	}
+    private void deleteInstance(String instanceId) {
+        logger.info("Deleting instance %s", instanceId);
+        developmentInstances.remove(instanceId);
+        instanceRepository.delete(instanceId);
+    }
 
-	public Optional<Instance> getInstance(String id) {
-		return instanceRepository.findInstanceById(id);
-	}
+    public Optional<Instance> getInstance(String id) {
+        return instanceRepository.findInstanceById(id);
+    }
 
-	public Optional<Instance> createInstance(String level, String version, String creatorId) throws IOException {
-		RestResponse<String> gameSessionIdResp = instanceContainerServiceClient.createInstance(level, version,
-				creatorId);
-		Optional<String> gameSessionIdOpt = gameSessionIdResp.get();
-		if (gameSessionIdOpt.isPresent()) {
-			String gameSessionId = gameSessionIdOpt.get();
+    public List<Instance> getAllInstances() {
+        return instanceRepository.findAll();
+    }
 
-			Instance instance = new Instance();
-			instance.setId(gameSessionId);
-			instance.setLevel(level);
-			instance.setState(InstanceState.STARTING.name());
-			instance.setVersion(version);
+    public Optional<Instance> findInstanceByMember(String username) {
+        return instanceRepository.findInstanceByMembers(username);
+    }
 
-			instance = saveInstance(instance);
-			return Optional.of(instance);
-		}
-		return Optional.empty();
-	}
+    public void syncInstances() throws IOException {
+        RestResponse<List<String>> gameSessionsResp = instanceContainerServiceClient.getGameSessions();
+        Optional<List<String>> gameSessionsOpt = gameSessionsResp.get();
+        if (!gameSessionsOpt.isPresent()) {
+            logger.error("Unable to get all game sessions from instance container service");
+            return;
+        }
 
-	public List<Instance> getAllInstances() {
-		return instanceRepository.findAll();
-	}
+        List<String> allInstancesIds = getAllInstances().stream().map(Instance::getId).collect(Collectors.toList());
+        List<String> gameSessionIds = gameSessionsOpt.get();
+        allInstancesIds.removeAll(gameSessionIds);
 
-	public Optional<Instance> findInstanceByMember(String username) {
-		return instanceRepository.findInstanceByMembers(username);
-	}
+        for (String instanceId : allInstancesIds) {
+            deleteInstance(instanceId);
+        }
+    }
 
-	public void syncInstances() throws IOException {
-		RestResponse<List<String>> gameSessionsResp = instanceContainerServiceClient.getGameSessions();
-		Optional<List<String>> gameSessionsOpt = gameSessionsResp.get();
-		if (!gameSessionsOpt.isPresent()) {
-			logger.error("Unable to get all game sessions from instance container service");
-			return;
-		}
+    public void createLocalInstance(String gameSessionId, String address, int port, String level, String state, String version) {
+        Instance localInstance = new Instance();
+        localInstance.setId(gameSessionId);
+        localInstance.setAddress(address);
+        localInstance.setPort(port);
+        localInstance.setLevel(level);
+        localInstance.setState(state);
+        localInstance.setVersion(version);
 
-		List<String> allInstancesIds = getAllInstances().stream().map(Instance::getId).collect(Collectors.toList());
-		List<String> gameSessionIds = gameSessionsOpt.get();
-		allInstancesIds.removeAll(gameSessionIds);
+        saveInstance(localInstance);
 
-		for (String instanceId : allInstancesIds) {
-			deleteInstance(instanceId);
-		}
-	}
+        developmentInstances.put(gameSessionId, Instant.now());
+    }
 
-	public void createLocalInstance(String gameSessionId, String address, int port, String level, String state, String version) {
-		Instance localInstance = new Instance();
-		localInstance.setId(gameSessionId);
-		localInstance.setAddress(address);
-		localInstance.setPort(port);
-		localInstance.setLevel(level);
-		localInstance.setState(state);
-		localInstance.setVersion(version);
-
-		saveInstance(localInstance);
-
-		developmentInstances.put(gameSessionId, Instant.now());
-	}
-
-	public void removeOldDevelopmentInstances() {
-		for(Map.Entry<String, Instant> entry : developmentInstances.entrySet()) {
-			if(entry.getValue().plus(1, ChronoUnit.HOURS).isBefore(Instant.now())) {
-				deleteInstance(entry.getKey());
-			}
-		}
-	}
+    public void removeOldDevelopmentInstances() {
+        for (Map.Entry<String, Instant> entry : developmentInstances.entrySet()) {
+            if (entry.getValue().plus(1, ChronoUnit.HOURS).isBefore(Instant.now())) {
+                deleteInstance(entry.getKey());
+            }
+        }
+    }
 }

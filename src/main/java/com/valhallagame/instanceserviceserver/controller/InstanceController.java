@@ -81,7 +81,7 @@ public class InstanceController {
 			Optional<QueuePlacement> queuePlacementOpt = queuePlacementService.getQueuePlacementFromQueuer(input.getUsername());
 			if(queuePlacementOpt.isPresent()) {
 				QueuePlacement queuePlacement = queuePlacementOpt.get();
-				return JS.message(HttpStatus.NOT_FOUND, "You are queued at %s to instance %s. Please try again", queuePlacement.getTimestamp(), queuePlacement.getId());
+				return JS.message(HttpStatus.NOT_FOUND, "You are queued at {} to instance {}. Please try again", queuePlacement.getTimestamp(), queuePlacement.getId());
 			} else {
 				return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
 			}
@@ -99,7 +99,7 @@ public class InstanceController {
 
 		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
 		if (!instanceOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from %s", input.toString());
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from {}", input.toString());
 		}
 		Instance instance = instanceOpt.get();
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonByInstance(instance);
@@ -186,7 +186,7 @@ public class InstanceController {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: {}", input.getGameSessionId());
 		}
 
 		Instance instance = optInstance.get();
@@ -220,8 +220,8 @@ public class InstanceController {
 						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
 		}
-		logger.info("Activated instance with id: %s, %s", input.getGameSessionId(), instance.toString());
-		return JS.message(HttpStatus.OK, "Activated instance with id: %s", input.getGameSessionId());
+		logger.info("Activated instance with id: {}, {}", input.getGameSessionId(), instance.toString());
+		return JS.message(HttpStatus.OK, "Activated instance with id: {}", input.getGameSessionId());
 	}
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
@@ -233,7 +233,7 @@ public class InstanceController {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: {}", input.getGameSessionId());
 		}
 
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());
@@ -255,7 +255,7 @@ public class InstanceController {
 					"dungeon changed state to finishing");
 			instance.setState(state.name());
 		}
-		logger.info("Updated state on instance %s ", input.getGameSessionId(), instance.toString());
+		logger.info("Updated state on instance {} ", input.getGameSessionId(), instance.toString());
 		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
 	}
 
@@ -357,7 +357,7 @@ public class InstanceController {
 
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.PERSON_LOGIN.name(), notificationMessage);
-		logger.info("Added player %s to instance %s ", username, instance.getId());
+		logger.info("Added player {} to instance {} ", username, instance.getId());
 		return JS.message(HttpStatus.OK, "Player added to instance");
 	}
 
@@ -378,7 +378,7 @@ public class InstanceController {
 		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 				RabbitMQRouting.Instance.PERSON_LOGOUT.name(),
 				new NotificationMessage(input.getUsername(), "Person logged out of an instance"));
-		logger.info("Removed player %s from instance %s ", input.getUsername(), instance.getId());
+		logger.info("Removed player {} from instance {} ", input.getUsername(), instance.getId());
 		return JS.message(HttpStatus.OK, "Player removed from instance");
 	}
 

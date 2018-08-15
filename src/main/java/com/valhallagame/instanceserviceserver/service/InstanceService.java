@@ -37,13 +37,13 @@ public class InstanceService {
     }
 
     public void deleteInstance(Instance local) {
-        logger.info("Deleting instance %s", local.getId());
+        logger.info("Deleting instance {}", local.getId());
         developmentInstances.remove(local.getId());
         instanceRepository.delete(local);
     }
 
     private void deleteInstance(String instanceId) {
-        logger.info("Deleting instance %s", instanceId);
+        logger.info("Deleting instance {}", instanceId);
         developmentInstances.remove(instanceId);
         instanceRepository.delete(instanceId);
     }

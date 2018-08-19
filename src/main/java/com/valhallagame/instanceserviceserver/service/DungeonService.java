@@ -31,7 +31,7 @@ public class DungeonService {
 	}
 
 	public Optional<Dungeon> getDungeonByInstance(Instance instance) {
-		return dungeonRepository.findDungeonByInstanceId(instance.getId());
+		return instance == null ? Optional.empty() : dungeonRepository.findDungeonByInstanceId(instance.getId());
 	}
 
 	public boolean canCreateDungeon(String username) throws IOException {

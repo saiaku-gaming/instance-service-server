@@ -1,21 +1,24 @@
 package com.valhallagame.instanceserviceserver.service;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
 import com.valhallagame.instanceserviceserver.model.QueuePlacement;
 import com.valhallagame.instanceserviceserver.repository.QueuePlacementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class QueuePlacementService {
+
+	Logger logger = LoggerFactory.getLogger(QueuePlacementService.class);
 
 	@Autowired
 	private QueuePlacementRepository queuePlacementRepository;
@@ -46,8 +49,17 @@ public class QueuePlacementService {
 	public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
 		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
 				.createQueuePlacement("DungeonQueue" + version, map, version, username);
+
+		if(!createQueuePlacementResponse.isOk()) {
+			logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
+					version, map, username, createQueuePlacementResponse);
+			return Optional.empty();
+		}
+
 		Optional<QueuePlacementDescriptionData> createQueuePlacementOpt = createQueuePlacementResponse.get();
 		if (!createQueuePlacementOpt.isPresent()) {
+			logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
+					version, map, username, createQueuePlacementResponse);
 			return Optional.empty();
 		}
 

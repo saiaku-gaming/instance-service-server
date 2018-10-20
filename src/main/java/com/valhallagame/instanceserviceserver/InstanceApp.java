@@ -1,10 +1,5 @@
 package com.valhallagame.instanceserviceserver;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-
 import com.valhallagame.common.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +13,13 @@ import com.valhallagame.common.DefaultServicePortMappings;
 
 @EnableScheduling
 @SpringBootApplication
-public class App {
+public class InstanceApp {
 
-	private static final Logger logger = LoggerFactory.getLogger(App.class);
+	private static final Logger logger = LoggerFactory.getLogger(InstanceApp.class);
 
 	public static void main(String[] args) {
 		Properties.load(args, logger);
-		SpringApplication.run(App.class, args);
+		SpringApplication.run(InstanceApp.class, args);
 	}
 
 	@Bean

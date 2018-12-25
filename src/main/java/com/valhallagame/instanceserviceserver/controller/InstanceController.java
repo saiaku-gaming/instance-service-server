@@ -6,6 +6,7 @@ import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
+import com.valhallagame.instancecontainerserviceclient.message.LatestVersionParameter;
 import com.valhallagame.instancecontainerserviceclient.model.FleetData;
 import com.valhallagame.instanceserviceclient.message.*;
 import com.valhallagame.instanceserviceclient.model.SessionAndConnectionData;
@@ -46,29 +47,33 @@ public class InstanceController {
 
 	private Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
-	@Autowired
-	private InstanceContainerServiceClient instanceContainerServiceClient;
+	private final InstanceContainerServiceClient instanceContainerServiceClient;
+
+	private final PartyServiceClient partyServiceClient;
+
+	private final PersonServiceClient personServiceClient;
+
+	private final InstanceService instanceService;
+
+	private final HubService hubService;
+
+	private final DungeonService dungeonService;
+
+	private final QueuePlacementService queuePlacementService;
+
+	private final RabbitTemplate rabbitTemplate;
 
 	@Autowired
-	private PartyServiceClient partyServiceClient;
-
-	@Autowired
-	private PersonServiceClient personServiceClient;
-
-	@Autowired
-	private InstanceService instanceService;
-
-	@Autowired
-	private HubService hubService;
-
-	@Autowired
-	private DungeonService dungeonService;
-
-	@Autowired
-	private QueuePlacementService queuePlacementService;
-
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
+	public InstanceController(InstanceContainerServiceClient instanceContainerServiceClient, PartyServiceClient partyServiceClient, PersonServiceClient personServiceClient, InstanceService instanceService, HubService hubService, DungeonService dungeonService, QueuePlacementService queuePlacementService, RabbitTemplate rabbitTemplate) {
+		this.instanceContainerServiceClient = instanceContainerServiceClient;
+		this.partyServiceClient = partyServiceClient;
+		this.personServiceClient = personServiceClient;
+		this.instanceService = instanceService;
+		this.hubService = hubService;
+		this.dungeonService = dungeonService;
+		this.queuePlacementService = queuePlacementService;
+		this.rabbitTemplate = rabbitTemplate;
+	}
 
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
@@ -163,15 +168,11 @@ public class InstanceController {
 				String memberUsername = m.getDisplayUsername().toLowerCase();
 				Optional<QueuePlacement> placementOpt = queuePlacementService
 						.getQueuePlacementFromQueuer(memberUsername);
-				if (placementOpt.isPresent()) {
-					queuePlacement.add(placementOpt.get());
-				}
+				placementOpt.ifPresent(queuePlacement::add);
 			});
 		} else {
 			Optional<QueuePlacement> placementOpt = queuePlacementService.getQueuePlacementFromQueuer(username);
-			if (placementOpt.isPresent()) {
-				queuePlacement.add(placementOpt.get());
-			}
+			placementOpt.ifPresent(queuePlacement::add);
 		}
 
 		RelevantDungeonsAndPlacement relevantDungeonsAndPlacement = new RelevantDungeonsAndPlacement(relevantDungeons,
@@ -309,21 +310,22 @@ public class InstanceController {
 			for (PartyMemberData partyMember : partyOpt.get().getPartyMembers()) {
 				NotificationMessage notificationMessage = new NotificationMessage(
 						partyMember.getDisplayUsername().toLowerCase(), "queue placement placed");
-				notificationMessage.addData("queuePlacementId", queuePlacement.getId());
-				notificationMessage.addData("mapName", input.getMap());
-				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-						RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
+				sendQueuePlacement(input, queuePlacement, notificationMessage);
 			}
 		} else {
 			NotificationMessage notificationMessage = new NotificationMessage(input.getUsername(),
 					"queue placement placed");
-			notificationMessage.addData("queuePlacementId", queuePlacement.getId());
-			notificationMessage.addData("mapName", input.getMap());
-			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
-					RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
+			sendQueuePlacement(input, queuePlacement, notificationMessage);
 		}
 
 		return JS.message(HttpStatus.OK, "Dungeon started");
+	}
+
+	private void sendQueuePlacement(StartDungeonParameter input, QueuePlacement queuePlacement, NotificationMessage notificationMessage) {
+		notificationMessage.addData("queuePlacementId", queuePlacement.getId());
+		notificationMessage.addData("mapName", input.getMap());
+		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+				RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
 	}
 
 	@RequestMapping(path = "/instance-player-login", method = RequestMethod.POST)
@@ -416,11 +418,22 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> getFeats() throws IOException {
 		RestResponse<List<FleetData>> fleets = instanceContainerServiceClient.getFleets();
-		if(fleets.isOk()) {
+		if(fleets.isOk() && fleets.get().isPresent()) {
 			return JS.message(HttpStatus.OK, fleets.get().get());
 		}
 		
 		return JS.message(fleets);
+	}
+
+	@RequestMapping(path = "/latest-version", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<JsonNode> latestVersion(@RequestBody LatestVersionParameter input) throws IOException {
+		logger.info("checking for input {} ", input);
+		RestResponse<String> version = instanceContainerServiceClient.latestVersion(input.getClientVersion());
+		if(version.isOk() && version.get().isPresent()) {
+			return JS.message(HttpStatus.OK, version.get().get());
+		}
+		return JS.message(version);
 	}
 
 	private ResponseEntity<JsonNode> getSession(String username, Instance instance) throws IOException {

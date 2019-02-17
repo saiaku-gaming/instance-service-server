@@ -3,6 +3,8 @@ package com.valhallagame.instanceserviceserver.service;
 import com.valhallagame.instanceserviceserver.model.Hub;
 import com.valhallagame.instanceserviceserver.model.QueuePlacement;
 import com.valhallagame.instanceserviceserver.repository.HubRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class HubService {
+	private static final Logger logger = LoggerFactory.getLogger(HubService.class);
 	public static final String HUB_MAP = "ValhallaMap";
 
 	private static final int SOFT_MAX = 10;
@@ -24,10 +27,12 @@ public class HubService {
 	private QueuePlacementService queuePlacementService;
 
 	public Hub saveHub(Hub hub) {
+		logger.info("Saving hub {}", hub);
 		return hubRepository.save(hub);
 	}
 
 	public Optional<Hub> getHubWithLeastAmountOfPlayers(String version, String username) throws IOException {
+		logger.info("Getting hub with least amount of players for user {} version {}", username, version);
 		Optional<Hub> hubOpt = hubRepository.getHubWithLeastAmountOfPlayers(version);
 
 		// Give it the old hub if we reached SOFT_MAX,

@@ -45,7 +45,7 @@ public class InstanceController {
 
 	private static final String DUNGEON = "dungeon";
 
-	private Logger logger = LoggerFactory.getLogger(InstanceController.class);
+	private static final Logger logger = LoggerFactory.getLogger(InstanceController.class);
 
 	private final InstanceContainerServiceClient instanceContainerServiceClient;
 
@@ -78,7 +78,7 @@ public class InstanceController {
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> getHub(@Valid @RequestBody GetHubParameter input) throws IOException {
-		
+		logger.info("Get Hub called with {}", input);
 		queuePlacementService.removeOldQueues(input.getVersion(), input.getUsername());
 		
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
@@ -99,7 +99,7 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> getDungeonConnection(@Valid @RequestBody GetDungeonConnectionParameter input)
 			throws IOException {
-
+		logger.info("Get Dungeon Connection called with {}", input);
 		String version = input.getVersion();
 
 		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
@@ -132,7 +132,7 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> getRelevantDungeons(@Valid @RequestBody GetRelevantDungeonsParameter input)
 			throws IOException {
-
+		logger.info("Get Relevant Dungeons called with {}", input);
 		String username = input.getUsername();
 		String version = input.getVersion();
 
@@ -184,6 +184,7 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> activateInstance(@Valid @RequestBody ActivateInstanceParameter input)
 			throws IOException {
+		logger.info("Activate Instance called with {}", input);
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -289,7 +290,7 @@ public class InstanceController {
 	@RequestMapping(path = "/start-dungeon", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> startDungeon(@Valid @RequestBody StartDungeonParameter input) throws IOException {
-
+		logger.info("Start Dungeon called with {}", input);
 		if (!dungeonService.canCreateDungeon(input.getUsername())) {
 			return JS.message(HttpStatus.BAD_REQUEST, "You cannot make a dungeon");
 		}
@@ -332,6 +333,7 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> instancePlayerLogin(@Valid @RequestBody InstancePlayerLoginParameter input)
 			throws IOException {
+		logger.info("Instance Player Login called with {}", input);
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 		if (!optInstance.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: " + input.getGameSessionId());
@@ -366,6 +368,7 @@ public class InstanceController {
 	@RequestMapping(path = "/instance-player-logout", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> instancePlayerLogout(@Valid @RequestBody InstancePlayerLogoutParameter input) {
+		logger.info("Instance Player Logout called with {}", input);
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
@@ -387,12 +390,14 @@ public class InstanceController {
 	@RequestMapping(path = "/get-all-instances", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<JsonNode> getAllInstances() {
+		logger.info("Get All Instances called");
 		return JS.message(HttpStatus.OK, instanceService.getAllInstances());
 	}
 
 	@RequestMapping(path = "/add-local-instance", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<JsonNode> addLocalInstance(@Valid @RequestBody AddLocalInstanceParameter input) {
+		logger.info("Add Local Instance called with {}", input);
 		instanceService.createLocalInstance(input.getGameSessionId(), input.getAddress(), input.getPort(),
 				input.getMapName(), input.getState(), input.getVersion());
 		return JS.message(HttpStatus.OK, "Local instance added");
@@ -402,6 +407,8 @@ public class InstanceController {
 	@ResponseBody
 	public ResponseEntity<JsonNode> getAllPlayersInSameInstance(
 			@Valid @RequestBody GetAllPlayersInSameInstanceParameter input) {
+		logger.info("Get All Players In Same Instance called with {}", input);
+
 		Optional<Instance> optInstance = instanceService.findInstanceByMember(input.getUsername());
 
 		if (!optInstance.isPresent()) {
@@ -416,7 +423,8 @@ public class InstanceController {
 	
 	@RequestMapping(path = "/get-fleets", method = RequestMethod.GET)
 	@ResponseBody
-	public ResponseEntity<JsonNode> getFeats() throws IOException {
+	public ResponseEntity<JsonNode> getFleets() throws IOException {
+		logger.info("Get Fleets called");
 		RestResponse<List<FleetData>> fleets = instanceContainerServiceClient.getFleets();
 		if(fleets.isOk() && fleets.get().isPresent()) {
 			return JS.message(HttpStatus.OK, fleets.get().get());

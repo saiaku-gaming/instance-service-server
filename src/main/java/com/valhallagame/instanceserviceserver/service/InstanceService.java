@@ -49,18 +49,22 @@ public class InstanceService {
     }
 
     public Optional<Instance> getInstance(String id) {
+        logger.info("Getting instance {}", id);
         return instanceRepository.findInstanceById(id);
     }
 
     public List<Instance> getAllInstances() {
+        logger.info("Getting all instances");
         return instanceRepository.findAll();
     }
 
     public Optional<Instance> findInstanceByMember(String username) {
+        logger.info("Finding instance for user {}", username);
         return instanceRepository.findInstanceByMembers(username);
     }
 
     public void syncInstances() throws IOException {
+        logger.info("Syncing instances");
         RestResponse<List<String>> gameSessionsResp = instanceContainerServiceClient.getGameSessions();
         Optional<List<String>> gameSessionsOpt = gameSessionsResp.get();
         if (!gameSessionsOpt.isPresent()) {
@@ -78,6 +82,7 @@ public class InstanceService {
     }
 
     public void createLocalInstance(String gameSessionId, String address, int port, String level, String state, String version) {
+        logger.info("Creating local instance with game session id {} address {} port {} level {} state {} version {}", gameSessionId, address, port, level, state, version);
         Instance localInstance = new Instance();
         localInstance.setId(gameSessionId);
         localInstance.setAddress(address);
@@ -92,6 +97,7 @@ public class InstanceService {
     }
 
     public void removeOldDevelopmentInstances() {
+        logger.info("Removing old development instance");
         for (Map.Entry<String, Instant> entry : developmentInstances.entrySet()) {
             if (entry.getValue().plus(1, ChronoUnit.HOURS).isBefore(Instant.now())) {
                 deleteInstance(entry.getKey());

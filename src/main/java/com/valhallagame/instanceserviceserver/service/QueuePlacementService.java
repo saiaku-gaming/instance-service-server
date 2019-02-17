@@ -18,7 +18,7 @@ import java.util.Optional;
 @Service
 public class QueuePlacementService {
 
-	Logger logger = LoggerFactory.getLogger(QueuePlacementService.class);
+	private static final Logger logger = LoggerFactory.getLogger(QueuePlacementService.class);
 
 	@Autowired
 	private QueuePlacementRepository queuePlacementRepository;
@@ -27,26 +27,32 @@ public class QueuePlacementService {
 	private InstanceContainerServiceClient instanceContainerServiceClient;
 
 	public QueuePlacement saveQueuePlacement(QueuePlacement queuePlacement) {
+		logger.info("Saving queue placement {}", queuePlacement);
 		return queuePlacementRepository.save(queuePlacement);
 	}
 
 	public void deleteQueuePlacement(QueuePlacement queuePlacement) {
+		logger.info("Deleting queue placement {}", queuePlacement);
 		queuePlacementRepository.delete(queuePlacement);
 	}
 
 	public List<QueuePlacement> getAllQueuePlacements() {
+		logger.info("Getting all queue placements");
 		return queuePlacementRepository.findAll();
 	}
 
 	public Optional<QueuePlacement> getQueuePlacementFromQueuer(String queuerUsername) {
+		logger.info("Getting queue placement for user {}", queuerUsername);
 		return queuePlacementRepository.findQueuePlacementByQueuerUsername(queuerUsername);
 	}
 
 	public List<QueuePlacement> getQueuePlacementsFromMapName(String mapName) {
+		logger.info("Getting queue placement for map {}", mapName);
 		return queuePlacementRepository.findQueuePlacementsByMapName(mapName);
 	}
 
 	public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
+		logger.info("Queue for instance for user {} map {} version {}", username, map, version);
 		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
 				.createQueuePlacement("DungeonQueue" + version, map, version, username);
 
@@ -81,6 +87,7 @@ public class QueuePlacementService {
 	 * an old server.
 	 */
 	public void removeOldQueues(String version, String username) {
+		logger.info("Removing old queues for user {} version {}", username, version);
 		queuePlacementRepository.findQueuePlacementByQueuerUsername(username).ifPresent(q -> {
 			if (!q.getVersion().equals(version)) {
 				queuePlacementRepository.delete(q);

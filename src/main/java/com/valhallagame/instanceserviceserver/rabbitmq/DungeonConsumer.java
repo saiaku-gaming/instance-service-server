@@ -29,6 +29,7 @@ public class DungeonConsumer {
 	@RabbitListener(queues = "#{partyCreatedQueue.name}")
     @Transactional
 	public void receivePartyCreated(NotificationMessage message) {
+		logger.info("Received Party Created with message {}", message);
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonFromOwnerUsername(message.getUsername());
 		if (dungeonOpt.isPresent()) {
 			Dungeon dungeon = dungeonOpt.get();

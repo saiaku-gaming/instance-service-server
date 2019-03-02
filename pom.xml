@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>instance-service-server</artifactId>
-	<version>1.7</version>
+	<version>1.8</version>
 	<packaging>jar</packaging>
 	<groupId>com.valhallagame.valhalla</groupId>
 	<name>Instance Service Server</name>
@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>com.valhallagame.valhalla</groupId>
 			<artifactId>common</artifactId>
-            <version>1.11</version>
+            <version>1.13</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

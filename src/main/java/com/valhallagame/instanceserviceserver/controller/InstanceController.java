@@ -5,6 +5,7 @@ import com.valhallagame.common.JS;
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
+import com.valhallagame.common.rabbitmq.RabbitSender;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.message.LatestVersionParameter;
 import com.valhallagame.instancecontainerserviceclient.model.FleetData;
@@ -22,7 +23,6 @@ import com.valhallagame.personserviceclient.PersonServiceClient;
 import com.valhallagame.personserviceclient.model.SessionData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,10 +61,10 @@ public class InstanceController {
 
 	private final QueuePlacementService queuePlacementService;
 
-	private final RabbitTemplate rabbitTemplate;
+	private final RabbitSender rabbitSender;
 
 	@Autowired
-	public InstanceController(InstanceContainerServiceClient instanceContainerServiceClient, PartyServiceClient partyServiceClient, PersonServiceClient personServiceClient, InstanceService instanceService, HubService hubService, DungeonService dungeonService, QueuePlacementService queuePlacementService, RabbitTemplate rabbitTemplate) {
+	public InstanceController(InstanceContainerServiceClient instanceContainerServiceClient, PartyServiceClient partyServiceClient, PersonServiceClient personServiceClient, InstanceService instanceService, HubService hubService, DungeonService dungeonService, QueuePlacementService queuePlacementService, RabbitSender rabbitSender) {
 		this.instanceContainerServiceClient = instanceContainerServiceClient;
 		this.partyServiceClient = partyServiceClient;
 		this.personServiceClient = personServiceClient;
@@ -72,7 +72,7 @@ public class InstanceController {
 		this.hubService = hubService;
 		this.dungeonService = dungeonService;
 		this.queuePlacementService = queuePlacementService;
-		this.rabbitTemplate = rabbitTemplate;
+		this.rabbitSender = rabbitSender;
 	}
 
 	@RequestMapping(path = "/get-hub", method = RequestMethod.POST)
@@ -211,14 +211,14 @@ public class InstanceController {
 					NotificationMessage notificationMessage = new NotificationMessage(
 							member.getDisplayUsername().toLowerCase(), "Dungeon active!");
 					notificationMessage.addData(DUNGEON, dungeon);
-					rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+					rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE,
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 				}
 			} else {
 				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(),
 						"Dungeon active!");
 				notificationMessage.addData(DUNGEON, dungeon);
-				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+				rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE,
 						RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 			}
 		}
@@ -274,14 +274,14 @@ public class InstanceController {
 						NotificationMessage notificationMessage = new NotificationMessage(
 								partyMember.getDisplayUsername().toLowerCase(), reason);
 						notificationMessage.addData(DUNGEON, dungeon);
-						rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
+						rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE, type.name(),
 								notificationMessage);
 					}
 				}
 			} else {
 				NotificationMessage notificationMessage = new NotificationMessage(dungeon.getOwnerUsername(), reason);
 				notificationMessage.addData(DUNGEON, dungeon);
-				rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(), type.name(),
+				rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE, type.name(),
 						notificationMessage);
 			}
 		}
@@ -325,7 +325,7 @@ public class InstanceController {
 	private void sendQueuePlacement(StartDungeonParameter input, QueuePlacement queuePlacement, NotificationMessage notificationMessage) {
 		notificationMessage.addData("queuePlacementId", queuePlacement.getId());
 		notificationMessage.addData("mapName", input.getMap());
-		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+		rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE,
 				RabbitMQRouting.Instance.DUNGEON_QUEUED.name(), notificationMessage);
 	}
 
@@ -359,7 +359,7 @@ public class InstanceController {
 		NotificationMessage notificationMessage = new NotificationMessage(username, "Person logged into instance");
 		notificationMessage.addData("gameSessionId", instance.getId());
 
-		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+		rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE,
 				RabbitMQRouting.Instance.PERSON_LOGIN.name(), notificationMessage);
 		logger.info("Added player {} to instance {} ", username, instance.getId());
 		return JS.message(HttpStatus.OK, "Player added to instance");
@@ -380,7 +380,7 @@ public class InstanceController {
 
 		instanceService.saveInstance(instance);
 
-		rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
+		rabbitSender.sendMessage(RabbitMQRouting.Exchange.INSTANCE,
 				RabbitMQRouting.Instance.PERSON_LOGOUT.name(),
 				new NotificationMessage(input.getUsername(), "Person logged out of an instance"));
 		logger.info("Removed player {} from instance {} ", input.getUsername(), instance.getId());

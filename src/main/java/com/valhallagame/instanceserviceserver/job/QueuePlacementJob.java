@@ -1,28 +1,11 @@
 package com.valhallagame.instanceserviceserver.job;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.common.rabbitmq.NotificationMessage;
 import com.valhallagame.common.rabbitmq.RabbitMQRouting;
 import com.valhallagame.instancecontainerserviceclient.InstanceContainerServiceClient;
 import com.valhallagame.instancecontainerserviceclient.model.QueuePlacementDescriptionData;
-import com.valhallagame.instanceserviceserver.model.Dungeon;
-import com.valhallagame.instanceserviceserver.model.Hub;
-import com.valhallagame.instanceserviceserver.model.Instance;
-import com.valhallagame.instanceserviceserver.model.InstanceState;
-import com.valhallagame.instanceserviceserver.model.QueuePlacement;
-import com.valhallagame.instanceserviceserver.model.QueuePlacementStatus;
+import com.valhallagame.instanceserviceserver.model.*;
 import com.valhallagame.instanceserviceserver.service.DungeonService;
 import com.valhallagame.instanceserviceserver.service.HubService;
 import com.valhallagame.instanceserviceserver.service.InstanceService;
@@ -30,6 +13,20 @@ import com.valhallagame.instanceserviceserver.service.QueuePlacementService;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.PartyData;
 import com.valhallagame.partyserviceclient.model.PartyMemberData;
+import org.slf4j.MDC;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class QueuePlacementJob {
@@ -55,32 +52,42 @@ public class QueuePlacementJob {
 	@Autowired
 	private PartyServiceClient partyServiceClient;
 
+	@Value("${spring.application.name}")
+	private String appName;
+
 	@Scheduled(fixedRate = 1000, initialDelay = 1000)
 	public void execute() throws IOException {
-		List<QueuePlacement> allQueuePlacements = queuePlacementService.getAllQueuePlacements();
+		MDC.put("service_name", appName);
+		MDC.put("request_id", UUID.randomUUID().toString());
 
-		if (allQueuePlacements.isEmpty()) {
-			return;
-		}
+		try {
+			List<QueuePlacement> allQueuePlacements = queuePlacementService.getAllQueuePlacements();
 
-		RestResponse<List<QueuePlacementDescriptionData>> queuePlacementInfoResp = instanceContainerServiceClient
-				.getQueuePlacementInfo(
-						allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
-		Optional<List<QueuePlacementDescriptionData>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
-
-		if (!queuePlacementInfoOpt.isPresent()) {
-			return;
-		}
-
-		Map<String, QueuePlacementDescriptionData> collect = queuePlacementInfoOpt.get().stream()
-				.collect(Collectors.toMap(QueuePlacementDescriptionData::getId, Function.identity()));
-
-		for (QueuePlacement queuePlacement : allQueuePlacements) {
-			QueuePlacementDescriptionData queuePlacementDescription = collect.get(queuePlacement.getId());
-
-			if (queuePlacementDescription.getStatus().equals(QueuePlacementStatus.FULFILLED.name())) {
-				saveInstanceAndNotify(queuePlacement, queuePlacementDescription);
+			if (allQueuePlacements.isEmpty()) {
+				return;
 			}
+
+			RestResponse<List<QueuePlacementDescriptionData>> queuePlacementInfoResp = instanceContainerServiceClient
+					.getQueuePlacementInfo(
+							allQueuePlacements.stream().map(QueuePlacement::getId).collect(Collectors.toList()));
+			Optional<List<QueuePlacementDescriptionData>> queuePlacementInfoOpt = queuePlacementInfoResp.get();
+
+			if (!queuePlacementInfoOpt.isPresent()) {
+				return;
+			}
+
+			Map<String, QueuePlacementDescriptionData> collect = queuePlacementInfoOpt.get().stream()
+					.collect(Collectors.toMap(QueuePlacementDescriptionData::getId, Function.identity()));
+
+			for (QueuePlacement queuePlacement : allQueuePlacements) {
+				QueuePlacementDescriptionData queuePlacementDescription = collect.get(queuePlacement.getId());
+
+				if (queuePlacementDescription.getStatus().equals(QueuePlacementStatus.FULFILLED.name())) {
+					saveInstanceAndNotify(queuePlacement, queuePlacementDescription);
+				}
+			}
+		} finally {
+			MDC.clear();
 		}
 	}
 

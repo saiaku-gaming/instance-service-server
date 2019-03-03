@@ -36,7 +36,7 @@ public class DungeonConsumer {
     @Transactional
 	public void receivePartyCreated(NotificationMessage message) {
 		MDC.put("service_name", appName);
-		MDC.put("request_id", UUID.randomUUID().toString());
+		MDC.put("request_id", message.getData().get("requestId") != null ? (String)message.getData().get("requestId") : UUID.randomUUID().toString());
 
 		logger.info("Received Party Created with message {}", message);
 
@@ -70,7 +70,7 @@ public class DungeonConsumer {
     @Transactional
 	public void receivePartyInviteAccepted(NotificationMessage message) {
 		MDC.put("service_name", appName);
-		MDC.put("request_id", UUID.randomUUID().toString());
+		MDC.put("request_id", message.getData().get("requestId") != null ? (String)message.getData().get("requestId") : UUID.randomUUID().toString());
 
         logger.info("Party invite recorded {}", message);
 

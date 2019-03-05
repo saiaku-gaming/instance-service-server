@@ -80,13 +80,13 @@ public class InstanceController {
 	public ResponseEntity<JsonNode> getHub(@Valid @RequestBody GetHubParameter input) throws IOException {
 		logger.info("Get Hub called with {}", input);
 		queuePlacementService.removeOldQueues(input.getVersion(), input.getUsername());
-		
+
 		Optional<Hub> optHub = hubService.getHubWithLeastAmountOfPlayers(input.getVersion(), input.getUsername());
 		if (!optHub.isPresent()) {
 			Optional<QueuePlacement> queuePlacementOpt = queuePlacementService.getQueuePlacementFromQueuer(input.getUsername());
 			if(queuePlacementOpt.isPresent()) {
 				QueuePlacement queuePlacement = queuePlacementOpt.get();
-				return JS.message(HttpStatus.NOT_FOUND, "You are queued at {} to instance {}. Please try again", queuePlacement.getTimestamp(), queuePlacement.getId());
+				return JS.message(HttpStatus.NOT_FOUND, "You are queued at %s to instance %s. Please try again", queuePlacement.getTimestamp(), queuePlacement.getId());
 			} else {
 				return JS.message(HttpStatus.NOT_FOUND, "No instance found. Please try again.");
 			}
@@ -104,7 +104,7 @@ public class InstanceController {
 
 		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
 		if (!instanceOpt.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from {}", input.toString());
+			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from %s", input.toString());
 		}
 		Instance instance = instanceOpt.get();
 		Optional<Dungeon> dungeonOpt = dungeonService.getDungeonByInstance(instance);
@@ -188,7 +188,7 @@ public class InstanceController {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: {}", input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
 		}
 
 		Instance instance = optInstance.get();
@@ -223,7 +223,7 @@ public class InstanceController {
 			}
 		}
 		logger.info("Activated instance with id: {}, {}", input.getGameSessionId(), instance.toString());
-		return JS.message(HttpStatus.OK, "Activated instance with id: {}", input.getGameSessionId());
+		return JS.message(HttpStatus.OK, "Activated instance with id: %s", input.getGameSessionId());
 	}
 
 	@RequestMapping(path = "/update-instance-state", method = RequestMethod.POST)
@@ -235,7 +235,7 @@ public class InstanceController {
 		Optional<Instance> optInstance = instanceService.getInstance(input.getGameSessionId());
 
 		if (!optInstance.isPresent()) {
-			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: {}", input.getGameSessionId());
+			return JS.message(HttpStatus.NOT_FOUND, "Could not find instance with id: %s", input.getGameSessionId());
 		}
 
 		InstanceState state = InstanceState.valueOf(input.getState().toUpperCase());

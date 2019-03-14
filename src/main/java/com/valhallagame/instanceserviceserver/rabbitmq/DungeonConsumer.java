@@ -57,6 +57,8 @@ public class DungeonConsumer {
 							RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
 				}
 			}
+		} catch (Exception e) {
+			logger.error("Error while processing Party Created notification", e);
 		} finally {
 			MDC.clear();
 		}
@@ -105,6 +107,8 @@ public class DungeonConsumer {
 			notificationMessage.addData("dungeon", dungeon);
 			rabbitTemplate.convertAndSend(RabbitMQRouting.Exchange.INSTANCE.name(),
 					RabbitMQRouting.Instance.DUNGEON_ACTIVE.name(), notificationMessage);
+		} catch (Exception e) {
+			logger.error("Error while processing Party Invite Accepted notification", e);
 		} finally {
         	MDC.clear();
 		}

@@ -87,10 +87,8 @@ public class HubService {
                         }
                     });
                 }
-
             }
         }
-
         return hubOpt.isPresent() && hubOpt.get().getInstance().getState().equals("ACTIVE") ? hubOpt : Optional.empty();
     }
 }

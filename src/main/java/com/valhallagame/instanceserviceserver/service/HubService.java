@@ -65,6 +65,7 @@ public class HubService {
                             .flatMap(fleetData -> fleetData
                                     .stream()
                                     .filter(fleetData2 -> fleetData2.getVersion().equals(version))
+                                    .filter(fleetData2 -> fleetData2.getInstanceCount() == 0)
                                     .map(FleetData::getFleetId)
                                     .findAny()
                             ).ifPresent(fleetId -> {

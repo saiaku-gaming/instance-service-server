@@ -13,20 +13,20 @@ import org.springframework.context.annotation.Profile;
 public class ServiceConfig {
 	@Bean
 	public PartyServiceClient partyServiceClient() {
-		PartyServiceClient.init("http://party-service.party-service:" + DefaultServicePortMappings.PARTY_SERVICE_PORT);
+		PartyServiceClient.init("http://party-service:" + DefaultServicePortMappings.PARTY_SERVICE_PORT);
 		return PartyServiceClient.get();
 	}
 
 	@Bean
 	public PersonServiceClient personServiceClient() {
-		PersonServiceClient.init("http://person-service.person-service:" + DefaultServicePortMappings.PERSON_SERVICE_PORT);
+		PersonServiceClient.init("http://person-service:" + DefaultServicePortMappings.PERSON_SERVICE_PORT);
 		return PersonServiceClient.get();
 	}
 
 	@Bean
 	public InstanceContainerServiceClient instanceContainerServiceClient() {
 		InstanceContainerServiceClient.init(
-				"http://instance-container-service.instance-container-service:" + DefaultServicePortMappings.INSTANCE_CONTAINER_SERVICE_PORT);
+				"http://instance-container-service:" + DefaultServicePortMappings.INSTANCE_CONTAINER_SERVICE_PORT);
 		return InstanceContainerServiceClient.get();
 	}
 }

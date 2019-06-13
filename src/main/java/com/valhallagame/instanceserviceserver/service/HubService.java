@@ -49,7 +49,6 @@ public class HubService {
                     .getQueuePlacementsFromMapName(HUB_MAP)
                     .stream()
                     .filter(qp -> qp.getVersion().equals(version))
-                    .filter(qp -> qp.getQueuerUsername().equals(username))
                     .collect(Collectors.toList());
             if (queuePlacementsFromMapName.isEmpty()) {
                 queuePlacementService.queueForInstance(version, HUB_MAP, username);

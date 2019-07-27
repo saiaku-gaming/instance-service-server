@@ -46,7 +46,7 @@ public class HubService {
         // Give it the new hub if we could not find any old ones.
         if (!hubOpt.isPresent() || (hubOpt.get().getInstance().getPlayerCount() > SOFT_MAX)) {
             List<QueuePlacement> queuePlacementsFromMapName = queuePlacementService
-                    .getQueuePlacementsFromMapName(HUB_MAP)
+                    .getQueuePlacementsFromHubMap()
                     .stream()
                     .filter(qp -> qp.getVersion().equals(version))
                     .collect(Collectors.toList());

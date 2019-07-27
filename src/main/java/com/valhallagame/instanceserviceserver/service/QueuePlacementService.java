@@ -26,11 +26,6 @@ public class QueuePlacementService {
 	@Autowired
 	private InstanceContainerServiceClient instanceContainerServiceClient;
 
-	public QueuePlacement saveQueuePlacement(QueuePlacement queuePlacement) {
-		logger.info("Saving queue placement {}", queuePlacement);
-		return queuePlacementRepository.save(queuePlacement);
-	}
-
 	public void deleteQueuePlacement(QueuePlacement queuePlacement) {
 		logger.info("Deleting queue placement {}", queuePlacement);
 		queuePlacementRepository.delete(queuePlacement);
@@ -46,12 +41,14 @@ public class QueuePlacementService {
 		return queuePlacementRepository.findQueuePlacementByQueuerUsername(queuerUsername);
 	}
 
-	public List<QueuePlacement> getQueuePlacementsFromMapName(String mapName) {
-		logger.info("Getting queue placement for map {}", mapName);
-		return queuePlacementRepository.findQueuePlacementsByMapName(mapName);
-	}
+    List<QueuePlacement> getQueuePlacementsFromHubMap() {
+        logger.info("Getting queue placement for map {}", HubService.HUB_MAP);
+        return queuePlacementRepository.findQueuePlacementsByMapName(HubService.HUB_MAP);
+    }
 
 	public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
+        queuePlacementRepository.deleteQueuePlacementByQueuerUsername(username);
+
 		logger.info("Queue for instance for user {} map {} version {}", username, map, version);
 		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
 				.createQueuePlacement("DungeonQueue" + version, map, version, username);
@@ -94,4 +91,9 @@ public class QueuePlacementService {
 			}
 		});
 	}
+
+    private QueuePlacement saveQueuePlacement(QueuePlacement queuePlacement) {
+        logger.info("Saving queue placement {}", queuePlacement);
+        return queuePlacementRepository.save(queuePlacement);
+    }
 }

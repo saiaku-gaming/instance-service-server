@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -46,38 +47,39 @@ public class QueuePlacementService {
         return queuePlacementRepository.findQueuePlacementsByMapName(HubService.HUB_MAP);
     }
 
-	public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
+    @Transactional
+    public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
         queuePlacementRepository.deleteQueuePlacementByQueuerUsername(username);
 
-		logger.info("Queue for instance for user {} map {} version {}", username, map, version);
-		RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
-				.createQueuePlacement("DungeonQueue" + version, map, version, username);
+        logger.info("Queue for instance for user {} map {} version {}", username, map, version);
+        RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
+                .createQueuePlacement("DungeonQueue" + version, map, version, username);
 
-		if(!createQueuePlacementResponse.isOk()) {
-			logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
-					version, map, username, createQueuePlacementResponse);
-			return Optional.empty();
-		}
+        if(!createQueuePlacementResponse.isOk()) {
+            logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
+                    version, map, username, createQueuePlacementResponse);
+            return Optional.empty();
+        }
 
-		Optional<QueuePlacementDescriptionData> createQueuePlacementOpt = createQueuePlacementResponse.get();
-		if (!createQueuePlacementOpt.isPresent()) {
-			logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
-					version, map, username, createQueuePlacementResponse);
-			return Optional.empty();
-		}
+        Optional<QueuePlacementDescriptionData> createQueuePlacementOpt = createQueuePlacementResponse.get();
+        if (!createQueuePlacementOpt.isPresent()) {
+            logger.error("Could not create que placement for version: {}, map: {}, username: {}. Got response {}",
+                    version, map, username, createQueuePlacementResponse);
+            return Optional.empty();
+        }
 
-		QueuePlacementDescriptionData queuePlacementDescription = createQueuePlacementOpt.get();
+        QueuePlacementDescriptionData queuePlacementDescription = createQueuePlacementOpt.get();
 
-		QueuePlacement queuePlacement = new QueuePlacement();
-		queuePlacement.setId(queuePlacementDescription.getId());
-		queuePlacement.setMapName(map);
-		queuePlacement.setQueuerUsername(username);
-		queuePlacement.setStatus(queuePlacementDescription.getStatus());
-		queuePlacement.setVersion(version);
-		queuePlacement.setTimestamp(Instant.now());
+        QueuePlacement queuePlacement = new QueuePlacement();
+        queuePlacement.setId(queuePlacementDescription.getId());
+        queuePlacement.setMapName(map);
+        queuePlacement.setQueuerUsername(username);
+        queuePlacement.setStatus(queuePlacementDescription.getStatus());
+        queuePlacement.setVersion(version);
+        queuePlacement.setTimestamp(Instant.now());
 
-		return Optional.ofNullable(saveQueuePlacement(queuePlacement));
-	}
+        return Optional.ofNullable(saveQueuePlacement(queuePlacement));
+    }
 
 	/**
 	 * Removes queue wrong version so that a updated user never tries to connect to

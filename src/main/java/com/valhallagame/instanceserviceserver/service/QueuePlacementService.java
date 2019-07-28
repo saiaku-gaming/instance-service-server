@@ -49,8 +49,6 @@ public class QueuePlacementService {
 
     @Transactional
     public Optional<QueuePlacement> queueForInstance(String version, String map, String username) throws IOException {
-        queuePlacementRepository.deleteQueuePlacementByQueuerUsername(username);
-
         logger.info("Queue for instance for user {} map {} version {}", username, map, version);
         RestResponse<QueuePlacementDescriptionData> createQueuePlacementResponse = instanceContainerServiceClient
                 .createQueuePlacement("DungeonQueue" + version, map, version, username);
@@ -96,6 +94,7 @@ public class QueuePlacementService {
 
     private QueuePlacement saveQueuePlacement(QueuePlacement queuePlacement) {
         logger.info("Saving queue placement {}", queuePlacement);
+        queuePlacementRepository.deleteQueuePlacementByQueuerUsername(queuePlacement.getQueuerUsername());
         return queuePlacementRepository.save(queuePlacement);
     }
 }

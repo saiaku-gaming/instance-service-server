@@ -65,61 +65,6 @@ public class DungeonRepositoryTest {
     }
 
     @Test
-    public void findDungeonByCreatorUsername() {
-        Instance instance = new Instance();
-        instance.setAddress("127.0.0.1");
-        instance.setLevel("Test Level");
-        instance.setMembers(Arrays.asList("Nisse", "Hult"));
-        instance.setPort(8080);
-        instance.setState("ACTIVE");
-        instance.setVersion("9999");
-        instance.setId("GAMELIFT-TEST");
-
-        entityManager.persist(instance);
-        entityManager.flush();
-
-        Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
-        dungeon.setInstance(instance);
-        dungeon.setOwnerPartyId(1);
-
-        entityManager.persist(dungeon);
-        entityManager.flush();
-
-        Optional<Dungeon> dungeonByInstanceId = dungeonRepository.findDungeonByCreatorUsername("Nisse");
-
-        assertTrue(dungeonByInstanceId.isPresent());
-        assertEquals(dungeon, dungeonByInstanceId.get());
-    }
-
-    @Test
-    public void findDungeonByMissingCreatorUsername() {
-        Instance instance = new Instance();
-        instance.setAddress("127.0.0.1");
-        instance.setLevel("Test Level");
-        instance.setMembers(Arrays.asList("Nisse", "Hult"));
-        instance.setPort(8080);
-        instance.setState("ACTIVE");
-        instance.setVersion("9999");
-        instance.setId("GAMELIFT-TEST");
-
-        entityManager.persist(instance);
-        entityManager.flush();
-
-        Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
-        dungeon.setInstance(instance);
-        dungeon.setOwnerPartyId(1);
-
-        entityManager.persist(dungeon);
-        entityManager.flush();
-
-        Optional<Dungeon> dungeonByInstanceId = dungeonRepository.findDungeonByCreatorUsername("Knife");
-
-        assertFalse(dungeonByInstanceId.isPresent());
-    }
-
-    @Test
     public void findActiveDungeonsByPartyId() {
         Instance instance1 = new Instance();
         instance1.setAddress("127.0.0.1");

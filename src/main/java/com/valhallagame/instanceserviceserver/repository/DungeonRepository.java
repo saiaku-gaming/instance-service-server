@@ -12,8 +12,6 @@ public interface DungeonRepository extends JpaRepository<Dungeon, Integer> {
 	@Query(value = "SELECT * FROM dungeon WHERE instance_id = :instanceId", nativeQuery = true)
 	Optional<Dungeon> findDungeonByInstanceId(@Param("instanceId") String instanceId);
 
-	Optional<Dungeon> findDungeonByCreatorUsername(String username);
-
 	@Query(value = "SELECT * FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_party_id = :partyId AND i.state IN ('ACTIVE')", nativeQuery = true)
 	List<Dungeon> findActiveDungeonsByPartyId(@Param("partyId") Integer partyId);
 
@@ -27,4 +25,10 @@ public interface DungeonRepository extends JpaRepository<Dungeon, Integer> {
 
 	@Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.dungeon_id = :dungeonId AND d.owner_party_id = :partyId AND i.state IN ('ACTIVE') AND i.version = :version", nativeQuery = true)
 	boolean canAccessDungeon(@Param("partyId") Integer partyId, @Param("dungeonId") int dungeonId, @Param("version") String version);
+
+	@Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_party_id = :partyId AND i.state != 'FINISHING'", nativeQuery = true)
+	boolean hasNonFinishingDungeon(@Param("partyId") Integer partyId);
+
+	@Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_username = :username AND i.state != 'FINISHING'", nativeQuery = true)
+	boolean hasNonFinishingDungeon(@Param("username") String username);
 }

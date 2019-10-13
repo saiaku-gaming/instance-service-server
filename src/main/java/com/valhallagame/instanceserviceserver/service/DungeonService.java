@@ -3,7 +3,6 @@ package com.valhallagame.instanceserviceserver.service;
 import com.valhallagame.common.RestResponse;
 import com.valhallagame.instanceserviceserver.model.Dungeon;
 import com.valhallagame.instanceserviceserver.model.Instance;
-import com.valhallagame.instanceserviceserver.model.InstanceState;
 import com.valhallagame.instanceserviceserver.repository.DungeonRepository;
 import com.valhallagame.partyserviceclient.PartyServiceClient;
 import com.valhallagame.partyserviceclient.model.PartyData;
@@ -44,16 +43,11 @@ public class DungeonService {
 		RestResponse<PartyData> partyResp = partyServiceClient.getParty(username);
 
 		Optional<PartyData> partyOpt = partyResp.get();
-		if (partyOpt.isPresent() && !partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username)) {
+		if (partyOpt.isPresent() && (!partyOpt.get().getLeader().getDisplayUsername().equalsIgnoreCase(username) || dungeonRepository.hasNonFinishingDungeon(partyOpt.get().getId()))) {
 			return false;
 		}
 
-		Optional<Dungeon> optDungeon = dungeonRepository.findDungeonByCreatorUsername(username);
-		if (!optDungeon.isPresent()) {
-			return true;
-		}
-
-		if (!optDungeon.get().getInstance().getState().equals(InstanceState.FINISHING.name())) {
+		if(dungeonRepository.hasNonFinishingDungeon(username)) {
 			return false;
 		}
 

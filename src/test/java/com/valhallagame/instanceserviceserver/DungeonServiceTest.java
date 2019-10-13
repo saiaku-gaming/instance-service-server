@@ -90,13 +90,17 @@ public class DungeonServiceTest extends BaseTest {
         PartyMemberData partyMemberData = new PartyMemberData();
         partyMemberData.setDisplayUsername("nisse");
         PartyData partyData = new PartyData();
+        partyData.setId(1);
         partyData.setLeader(partyMemberData);
 
         RestResponse<PartyData> partyResp = new RestResponse<>(HttpStatus.OK, Optional.of(partyData));
 
         when(partyServiceClient.getParty("Nisse")).thenReturn(partyResp);
 
-        when(dungeonRepository.findDungeonByCreatorUsername("Nisse")).thenReturn(Optional.empty());
+        when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
+        when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
+
+        when(queuePlacementService.getQueuePlacementFromQueuer("Nisse")).thenReturn(Optional.empty());
 
         assertTrue(dungeonService.canCreateDungeon("Nisse"));
     }
@@ -106,6 +110,7 @@ public class DungeonServiceTest extends BaseTest {
         PartyMemberData partyMemberData = new PartyMemberData();
         partyMemberData.setDisplayUsername("nisse");
         PartyData partyData = new PartyData();
+        partyData.setId(1);
         partyData.setLeader(partyMemberData);
 
         RestResponse<PartyData> partyResp = new RestResponse<>(HttpStatus.OK, Optional.of(partyData));
@@ -118,7 +123,8 @@ public class DungeonServiceTest extends BaseTest {
         Dungeon dungeon = createDungeon(instance);
         dungeon.setCreatorUsername("Nisse");
 
-        when(dungeonRepository.findDungeonByCreatorUsername("Nisse")).thenReturn(Optional.of(dungeon));
+        when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
+        when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
 
         when(queuePlacementService.getQueuePlacementFromQueuer("Nisse")).thenReturn(Optional.empty());
 
@@ -151,7 +157,7 @@ public class DungeonServiceTest extends BaseTest {
         Dungeon dungeon = createDungeon(instance);
         dungeon.setCreatorUsername("Nisse");
 
-        when(dungeonRepository.findDungeonByCreatorUsername("Nisse")).thenReturn(Optional.of(dungeon));
+        when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
 
         when(queuePlacementService.getQueuePlacementFromQueuer("Nisse")).thenReturn(Optional.empty());
 
@@ -163,6 +169,7 @@ public class DungeonServiceTest extends BaseTest {
         PartyMemberData partyMemberData = new PartyMemberData();
         partyMemberData.setDisplayUsername("nisse");
         PartyData partyData = new PartyData();
+        partyData.setId(1);
         partyData.setLeader(partyMemberData);
 
         RestResponse<PartyData> partyResp = new RestResponse<>(HttpStatus.OK, Optional.of(partyData));
@@ -175,7 +182,8 @@ public class DungeonServiceTest extends BaseTest {
         Dungeon dungeon = createDungeon(instance);
         dungeon.setCreatorUsername("Nisse");
 
-        when(dungeonRepository.findDungeonByCreatorUsername("Nisse")).thenReturn(Optional.of(dungeon));
+        when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
+        when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(true);
 
         assertFalse(dungeonService.canCreateDungeon("Nisse"));
     }
@@ -185,6 +193,7 @@ public class DungeonServiceTest extends BaseTest {
         PartyMemberData partyMemberData = new PartyMemberData();
         partyMemberData.setDisplayUsername("nisse");
         PartyData partyData = new PartyData();
+        partyData.setId(1);
         partyData.setLeader(partyMemberData);
 
         RestResponse<PartyData> partyResp = new RestResponse<>(HttpStatus.OK, Optional.of(partyData));
@@ -197,7 +206,8 @@ public class DungeonServiceTest extends BaseTest {
         Dungeon dungeon = createDungeon(instance);
         dungeon.setCreatorUsername("Nisse");
 
-        when(dungeonRepository.findDungeonByCreatorUsername("Nisse")).thenReturn(Optional.of(dungeon));
+        when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
+        when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
 
         QueuePlacement queuePlacement = new QueuePlacement();
 

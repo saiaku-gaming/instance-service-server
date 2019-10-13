@@ -102,7 +102,7 @@ public class InstanceController {
 		logger.info("Get Dungeon Connection called with {}", input);
 		String version = input.getVersion();
 
-		Optional<Instance> instanceOpt = instanceService.getInstance(input.getGameSessionId());
+        Optional<Instance> instanceOpt = instanceService.getInstance(input.getInstanceId());
 		if (!instanceOpt.isPresent()) {
 			return JS.message(HttpStatus.NOT_FOUND, "No instance found with from %s", input.toString());
 		}
@@ -257,7 +257,7 @@ public class InstanceController {
 					"dungeon changed state to finishing");
 			instance.setState(state.name());
 		}
-		logger.info("Updated state on instance {} ", input.getGameSessionId(), instance.toString());
+        logger.info("Updated state on instance {}, {} ", input.getGameSessionId(), instance.toString());
 		return JS.message(HttpStatus.OK, "Updated state on instance with id: " + input.getGameSessionId());
 	}
 

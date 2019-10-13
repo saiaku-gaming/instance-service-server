@@ -124,11 +124,9 @@ public class QueuePlacementJob {
 			dungeon.setOwnerUsername(queuePlacement.getQueuerUsername());
 		}
 
-		dungeon.setCreatorUsername(queuePlacement.getQueuerUsername());
+		queuePlacementService.deleteQueuePlacement(queuePlacement);
 
 		dungeonService.saveDungeon(dungeon);
-
-		queuePlacementService.deleteQueuePlacement(queuePlacement);
 
 		if (partyOpt.isPresent()) {
 			for (PartyMemberData member : partyOpt.get().getPartyMembers()) {

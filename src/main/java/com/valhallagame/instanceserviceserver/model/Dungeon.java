@@ -1,18 +1,10 @@
 package com.valhallagame.instanceserviceserver.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
 
 @Data
 @Entity
@@ -35,7 +27,4 @@ public class Dungeon {
 
 	@Column(name = "owner_party_id")
 	private Integer ownerPartyId;
-
-	@Column(name = "creator_username")
-	private String creatorUsername;
 }

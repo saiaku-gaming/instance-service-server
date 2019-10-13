@@ -120,9 +120,6 @@ public class DungeonServiceTest extends BaseTest {
         Instance instance = createInstance();
         instance.setState("FINISHING");
 
-        Dungeon dungeon = createDungeon(instance);
-        dungeon.setCreatorUsername("Nisse");
-
         when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
         when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
 
@@ -154,9 +151,6 @@ public class DungeonServiceTest extends BaseTest {
         Instance instance = createInstance();
         instance.setState("FINISHING");
 
-        Dungeon dungeon = createDungeon(instance);
-        dungeon.setCreatorUsername("Nisse");
-
         when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);
 
         when(queuePlacementService.getQueuePlacementFromQueuer("Nisse")).thenReturn(Optional.empty());
@@ -179,9 +173,6 @@ public class DungeonServiceTest extends BaseTest {
         Instance instance = createInstance();
         instance.setState("ACTIVE");
 
-        Dungeon dungeon = createDungeon(instance);
-        dungeon.setCreatorUsername("Nisse");
-
         when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
         when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(true);
 
@@ -202,9 +193,6 @@ public class DungeonServiceTest extends BaseTest {
 
         Instance instance = createInstance();
         instance.setState("FINISHING");
-
-        Dungeon dungeon = createDungeon(instance);
-        dungeon.setCreatorUsername("Nisse");
 
         when(dungeonRepository.hasNonFinishingDungeon(1)).thenReturn(false);
         when(dungeonRepository.hasNonFinishingDungeon("Nisse")).thenReturn(false);

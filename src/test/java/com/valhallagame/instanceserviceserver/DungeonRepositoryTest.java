@@ -44,7 +44,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 
@@ -79,7 +78,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon1 = new Dungeon();
-        dungeon1.setCreatorUsername("Nisse");
         dungeon1.setInstance(instance1);
         dungeon1.setOwnerPartyId(1);
 
@@ -99,7 +97,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon2 = new Dungeon();
-        dungeon2.setCreatorUsername("Nisse");
         dungeon2.setInstance(instance2);
         dungeon2.setOwnerPartyId(1);
 
@@ -119,7 +116,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon3 = new Dungeon();
-        dungeon3.setCreatorUsername("Nisse");
         dungeon3.setInstance(instance3);
         dungeon3.setOwnerPartyId(1);
 
@@ -148,7 +144,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon1 = new Dungeon();
-        dungeon1.setCreatorUsername("Nisse");
         dungeon1.setInstance(instance1);
         dungeon1.setOwnerPartyId(1);
 
@@ -168,7 +163,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon2 = new Dungeon();
-        dungeon2.setCreatorUsername("Nisse");
         dungeon2.setInstance(instance2);
         dungeon2.setOwnerPartyId(1);
 
@@ -188,7 +182,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon3 = new Dungeon();
-        dungeon3.setCreatorUsername("Nisse");
         dungeon3.setInstance(instance3);
         dungeon3.setOwnerPartyId(1);
 
@@ -217,7 +210,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -245,7 +237,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -272,7 +263,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -297,7 +287,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -322,7 +311,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -347,7 +335,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerUsername("Nisse");
 
@@ -372,7 +359,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 
@@ -397,7 +383,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 
@@ -422,7 +407,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 
@@ -447,7 +431,6 @@ public class DungeonRepositoryTest {
         entityManager.flush();
 
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 

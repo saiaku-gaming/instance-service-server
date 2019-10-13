@@ -31,7 +31,6 @@ public abstract class BaseTest {
 
     Dungeon createDungeon(Instance instance) {
         Dungeon dungeon = new Dungeon();
-        dungeon.setCreatorUsername("Nisse");
         dungeon.setInstance(instance);
         dungeon.setOwnerPartyId(1);
 

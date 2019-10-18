@@ -18,6 +18,7 @@ public interface DungeonRepository extends JpaRepository<Dungeon, Integer> {
 	@Query(value = "SELECT * FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.owner_party_id = :partyId AND i.state IN ('ACTIVE', 'STARTING') AND i.version = :version", nativeQuery = true)
 	List<Dungeon> findRelevantDungeonsByPartyId(@Param("partyId") Integer partyId, @Param("version") String version);
 
+	@Query(value = "SELECT * FROM dungeon d JOIN instance i ON (i.instance_id = d.instance_id) WHERE owner_username = :username AND i.state IN ('FINISHING', 'FINISHED')", nativeQuery = true)
 	Optional<Dungeon> findDungeonByOwnerUsername(String username);
 
 	@Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM dungeon d JOIN instance i ON(i.instance_id = d.instance_id) WHERE d.dungeon_id = :dungeonId AND d.owner_username = :username AND i.state IN ('ACTIVE') AND i.version = :version", nativeQuery = true)
